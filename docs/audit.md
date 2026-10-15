@@ -1,6 +1,6 @@
 # Аудит исходного состояния и фундамент
 
-Дата: 2026-10-14. Область: первая итерация Truck Route & Savings.
+Дата исходного аудита: 2026-10-14; актуализация: 2026-10-15. Область: первая итерация Truck Route & Savings.
 
 ## Исходное состояние
 
@@ -53,7 +53,7 @@ Android Emulator 37.3.4 (build 16555280) и AOSP API 35 default x86_64 system im
 
 `pnpm test:android` дважды прошёл на `emulator-5580` с Metro: APK проверен до установки, Activity стартовала, процесс жив, все три текста найдены в реальном UI hierarchy. Screenshot визуально проверен: заголовок и оба сообщения видимы, текст не обрезан. Evidence: `artifacts/android-smoke/screen.png`, `ui.xml`, `app.log`. В последних 200 строках текущего PID не обнаружены заданные fatal/JS markers; это ограниченная smoke-проверка, не доказательство отсутствия всех ошибок. Реальный GPS/routing не выполнялся.
 
-Новая smoke-команда покрыта 4 unit tests (явный serial, неверный package name, отказ на loading/redbox, XML escaped labels). Всего `test:scripts` теперь выполняет 6 tests; все прошли. Общий lint расширен на scripts/*.cjs и прошёл. YAML CI с Emulator Runner и evidence upload разбирается, но GitHub workflow не запускался. Корневые команды этой итерации выполнены portable pnpm 10.28.2 из `C:/Users/Public/TruckRouteSavings-tools/pnpm10/package/bin/pnpm.cjs`: предыдущий temporary runtime больше не доступен, bundled pnpm 11 попытался auto-install и остановился до purge из-за отсутствия TTY.
+Новая smoke-команда покрыта 4 unit tests (явный serial, неверный package name, отказ на loading/redbox, XML escaped labels). Всего `test:scripts` теперь выполняет 6 tests; все прошли. Общий lint расширен на scripts/*.cjs и прошёл. На этом этапе YAML CI с Emulator Runner и evidence upload разбирался; итоговый GitHub run приведён ниже. Корневые команды этой итерации выполнены portable pnpm 10.28.2 из `C:/Users/Public/TruckRouteSavings-tools/pnpm10/package/bin/pnpm.cjs`: предыдущий temporary runtime больше не доступен, bundled pnpm 11 попытался auto-install и остановился до purge из-за отсутствия TTY.
 
 Проблемы, исправленные при проверках: Metro не видел root node_modules; добавлен workspace watchFolder. SafeAreaProvider не рендерил content в Jest без native metrics; подключён mock, поставляемый библиотекой. Все перечисленные тесты повторно прошли после исправлений. Запущенные процессы остановлены после smoke checks.
 
@@ -61,7 +61,6 @@ Android Emulator 37.3.4 (build 16555280) и AOSP API 35 default x86_64 system im
 
 - Android release binary, 32-bit ABIs и запуск на физическом ARM-устройстве не проверены. Debug x86_64/arm64-v8a builds и signature/manifest inspection прошли; runtime smoke выполнен только на API 35 x86_64 AVD.
 - CocoaPods install и Xcode native Simulator build прошли на macos-15. Запуск приложения на iOS simulator/device не проверен.
-- GitHub Actions запущен после разрешённой публикации в noname33-cmd/123; результат пока ожидается. YAML parsing не подтверждает успех workflow.
 - Установка на отдельной физической машине не выполнялась; проверены чистый Windows workspace и изолированный Linux container без package cache.
 - Реализован и выполнен только Android launch/UI smoke. Полные business E2E, другие API levels и физические устройства не проверены; iOS runtime не проверен.
 - Gemfile.lock создан и frozen install проверен в Linux. Podfile.lock получен из успешного macOS CI build и добавлен в исходники; CI использует pod install --deployment. Gradle dependency lockfiles отсутствуют; полную воспроизводимость native builds пока заявлять нельзя.
@@ -73,7 +72,7 @@ Android Emulator 37.3.4 (build 16555280) и AOSP API 35 default x86_64 system im
 
 ## Критерий завершения
 
-JS-фундамент проверен в чистых Windows/Linux workspace, infrastructure runtime подтверждён, Android debug x86_64/arm64 APK собраны, x86_64 shell реально запущен на AVD. Всего прошли 11 unit/component/HTTP/script tests плюс Android device smoke и infrastructure runtime checks. Полный критерий задачи пока **не подтверждён**: остаются iOS native build/runtime и фактический GitHub CI run. Пользователь разрешил публикацию в noname33-cmd/123 и запуск CI с macOS/iOS. Исходники опубликованы, CI запущен. Следующий шаг — разобрать результаты всех jobs и получить native lockfiles. Реальная HERE/GPS интеграция не добавляется.
+JS-фундамент проверен в чистых Windows/Linux workspace, infrastructure runtime подтверждён, Android debug x86_64/arm64 APK собраны, x86_64 shell реально запущен на AVD. Всего прошли 11 unit/component/HTTP/script tests плюс Android device smoke и infrastructure runtime checks. Установка, сборки, тесты и запуск backend/Android подтверждены локально и в чистом CI. iOS native Simulator build также прошёл, однако запуск iOS приложения на simulator/device не проверен. Исходники опубликованы с разрешения пользователя. Следующий отдельный шаг — iOS launch/UI smoke; release builds, physical devices и Gradle dependency locking остаются за пределами подтверждённых проверок. Реальная HERE/GPS интеграция не добавляется.
 
 ## Продолжение 2026-10-15: Linux и Ruby reproducibility
 
@@ -81,7 +80,7 @@ JS-фундамент проверен в чистых Windows/Linux workspace, 
 
 Из исходного Gemfile без изменения ограничений создан Gemfile.lock с Darwin Intel/ARM platforms. Ruby 3.3.12 зафиксирован в `.ruby-version` и CI; Bundler 2.5.22 — в lockfile и CI. В отдельном Linux-контейнере frozen bundle install, bundle check и Ruby require CocoaPods/Xcodeproj успешны: 45 gems, CocoaPods 1.15.2, Xcodeproj 1.25.1. SHA-256 lockfile до/после frozen install совпадает: `1ad9ce8f5cfbf9829c4d3e502179d641dcaf9d5ae273e69481718d3b7133fc97`. Image: `ruby:3.3-slim-bookworm@sha256:2e32876dfe84913ec84eb4a59617f72dab7c0989d38f8219487491e384543975`. Native extensions компилировались внутри контейнера; host Ruby не устанавливался. Darwin install, pod install и Xcode build не выполнялись и этим результатом не подтверждаются.
 
-С разрешения пользователя опубликованы 87 исходных файлов в публичный репозиторий [noname33-cmd/123](https://github.com/noname33-cmd/123). Коммит `370dfe80dd66bde12d356e263a28e94a8f10321a`, [CI run 38681590319](https://github.com/noname33-cmd/123/actions/runs/38681590319). Результат CI ожидается; запуск workflow сам по себе не подтверждает успешные сборки. APK, screenshots, node_modules, локальные SDK и ключи исключены. Все временные Linux/Ruby контейнеры завершены и удалены.
+С разрешения пользователя опубликованы 87 исходных файлов в публичный репозиторий [noname33-cmd/123](https://github.com/noname33-cmd/123). Коммит `370dfe80dd66bde12d356e263a28e94a8f10321a`, [CI run 38681590319](https://github.com/noname33-cmd/123/actions/runs/38681590319). Первый Android job завершился таймаутом ADB без KVM; исправление и успешный итоговый run описаны ниже. APK, screenshots, node_modules, локальные SDK и ключи исключены. Все временные Linux/Ruby контейнеры завершены и удалены.
 
 Файлы этой итерации: `apps/mobile/.ruby-version`, `apps/mobile/Gemfile.lock`, `.github/workflows/ci.yml`, `README.md`, `docs/audit.md`. Исходники приложения не менялись, новые feature modules не добавлялись.
 
@@ -183,4 +182,18 @@ JS-фундамент проверен в чистых Windows/Linux workspace, 
 
 ## GitHub native validation 2026-10-15
 
-В runs 38681590319 и 38681772864 jobs checks и ios прошли. Native Simulator build: **BUILD SUCCEEDED**, CocoaPods 1.15.2; iOS runtime не проверен. Podfile.lock извлечён из ios-build-evidence второго run; SHA-256 ZIP совпал с GitHub artifact digest ef05464f47da5fddba6a05b33aad3d2113b136d15489238e00d11ca718d97f70. Lock не содержит абсолютных runner paths. Android APK собран; emulator smoke ещё выполняется.
+В runs 38681590319 и 38681772864 jobs checks и ios прошли. Native Simulator build: **BUILD SUCCEEDED**, CocoaPods 1.15.2; iOS runtime не проверен. Podfile.lock извлечён из ios-build-evidence второго run; SHA-256 ZIP совпал с GitHub artifact digest ef05464f47da5fddba6a05b33aad3d2113b136d15489238e00d11ca718d97f70. Lock не содержит абсолютных runner paths. Android APK собран; итоговый emulator smoke после настройки KVM прошёл (см. ниже).
+
+## Итог CI 2026-10-15
+
+[Run 38683058653](https://github.com/noname33-cmd/123/actions/runs/38683058653), commit `f0daacc9832e5af17a1c3c1fbd21147fb6c420a7`: все jobs **success**.
+
+- checks: frozen pnpm install, lint, typecheck, API/navigation build, Android/iOS JS bundles, 3 unit/component + 2 HTTP + 6 script tests (всего 11), PostGIS authenticated TCP/geography и Redis PING/write/read.
+- android: native debug x86_64 APK, KVM acceleration check, AOSP API 35 emulator, Activity/process/UI labels smoke. Screenshot из CI визуально проверен: все сообщения видимы без обрезки. Evidence сохраняется в artifacts CI; локальная копия artifacts/ci-android исключена из Git.
+- ios: frozen Bundler, pod install --deployment, native Debug Simulator build без signing. Xcode 16.4 / iPhone Simulator SDK 18.5. Podfile.lock SHA-256 до/после совпал: 2604b1449eb53cb7ee5f862b49ead415f3006b50a5fe1f050d527568633de3d3. iOS runtime не проверен.
+
+Artifacts: android-debug-x86_64, android-smoke-evidence (ZIP SHA-256 3127f141cd63fb9f054e27cf7962ec5b84608d50ddcf298eacab7a41c7ef205e), ios-build-evidence (ZIP SHA-256 6caf3bea4dbb290dd2563b3d7be3ebcfcf6599b31be1d9e325337d9317ba807c). Скачанные evidence ZIP сверены с GitHub digests.
+
+Исправления CI: у Ubuntu runner изначально не было прав на /dev/kvm, action отключал ускорение; emulator boot занял около 7 минут и ADB smoke завершился timeout. Устройство KVM теперь доступно только текущему runner user (mode 600); -accel-check подтвердил KVM version 12, AVD boot занял около 32 секунд. Следующий промежуточный run выявил отсутствие Emulator binary до accel-check; пакет emulator добавлен в явный sdkmanager install. Успешный итоговый run проверил оба исправления. Прежние неудачные runs сохранены в GitHub для аудита.
+
+Изменения продолжения: .github/workflows/ci.yml, apps/mobile/ios/Podfile.lock, apps/mobile/android/gradlew.bat (нормализация строк), README.md, apps/mobile/README.md, docs/audit.md. Опубликовано 88 файлов исходников. Документационный итоговый commit использует [skip ci], поскольку меняет только описание уже проверенного состояния.

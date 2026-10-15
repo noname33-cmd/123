@@ -102,7 +102,7 @@ POSIX: задайте те же переменные через `export`. Нуж
 
 Успех требует трёх текстов shell в реальном UI hierarchy и живого app process. Screenshot, UI XML и последние 200 строк логов текущего PID сохраняются в `artifacts/android-smoke/` (не коммитятся). Проверка логов обнаруживает указанные fatal/JS error markers; она не доказывает отсутствие любых ошибок. Команда не очищает глобальный logcat и не снимает защищённую блокировку устройства.
 
-Локальный emulator запускается из AVD, созданного через SDK Manager/avdmanager. Перед запуском проверьте `emulator -accel-check`. На проверочной Windows-машине WHPX уже был включён; новых hypervisor drivers и reboot не понадобилось. CI содержит запуск API 35 x86_64 AVD, device smoke и загрузку evidence artifacts, GitHub run запущен, результат ожидается.
+Локальный emulator запускается из AVD, созданного через SDK Manager/avdmanager. Перед запуском проверьте `emulator -accel-check`. На проверочной Windows-машине WHPX уже был включён; новых hypervisor drivers и reboot не понадобилось. CI содержит запуск API 35 x86_64 AVD, device smoke и загрузку evidence artifacts, [CI run](https://github.com/noname33-cmd/123/actions/runs/38683058653) прошёл: checks, android, ios. Android device smoke успешен; screenshot проверен.
 
 Официальные инструкции: [Emulator acceleration](https://developer.android.com/studio/run/emulator-acceleration), [Emulator CLI](https://developer.android.com/studio/run/emulator-commandline), [ADB](https://developer.android.com/tools/adb).
 
@@ -141,4 +141,4 @@ HERE Navigate не установлен. До интеграции нужно п
 
 Состояние проверок и следующий шаг описаны в `docs/audit.md`. Наличие workflow не означает успешный запуск CI или native builds.
 
-Публикация исходников: [noname33-cmd/123](https://github.com/noname33-cmd/123). Первый [CI run](https://github.com/noname33-cmd/123/actions/runs/38681590319) запущен; итог ожидается.
+Публикация исходников: [noname33-cmd/123](https://github.com/noname33-cmd/123). [Итоговый CI run](https://github.com/noname33-cmd/123/actions/runs/38683058653) прошёл полностью на коммите f0daacc9832e5af17a1c3c1fbd21147fb6c420a7. Проверены frozen install, lint, typecheck, build, 11 tests, PostGIS/Redis, Android native build/UI smoke и iOS native Simulator build (Xcode 16.4, SDK 18.5). iOS runtime, физические устройства и release signing не проверены.
