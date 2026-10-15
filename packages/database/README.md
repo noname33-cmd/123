@@ -4,7 +4,7 @@
 
 В схеме нет бизнес-моделей, таблиц и migrations. PostGIS создаётся официальным локальным Docker image; adapter проверяет расширение запросом SELECT PostGIS_Lib_Version(). ORM mapping spatial types, domain repositories, migrations и readiness endpoint — отдельные задачи.
 
-Конфигурация требует явный DATABASE_URL с PostgreSQL protocol, host, database, username и password. URL options передаются драйверу без подмены; SSL certificate verification не отключается. Ошибки конфигурации/startup не включают URL или пароль. Pool ограничен пятью соединениями; connection и statement timeout — 5000 ms, idle timeout — 10000 ms. Shutdown вызывает Prisma $disconnect. Production SSL/pooling/reconnect/load behaviour пока не проверены.
+Конфигурация требует явный DATABASE_URL с PostgreSQL protocol, host, database, username и password. URL options передаются драйверу без подмены; в коде нет принудительного rejectUnauthorized: false. SSL policy определяется выбранными connection options драйвера и требует отдельной production-проверки. Ошибки конфигурации/startup не включают URL или пароль. Pool ограничен пятью соединениями; connection и statement timeout — 5000 ms, idle timeout — 10000 ms. Shutdown вызывает Prisma $disconnect. Production SSL/pooling/reconnect/load behaviour пока не проверены.
 
 Из корня: `pnpm --filter @truck/database build`, `pnpm test`, `pnpm test:database`. Последняя команда проверяет реальный adapter в отдельном одноразовом PostGIS container, включая неправильный пароль. Unit tests не подключаются к DB. Dev-only react-dom 19.2.3 удовлетворяет peer Prisma CLI Studio и совпадает с текущим React; Studio не запускается и в mobile runtime не используется.
 

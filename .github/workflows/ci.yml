@@ -79,6 +79,11 @@ jobs:
         run: |
           mkdir -p artifacts
           (cd apps/mobile && pnpm start --no-interactive --max-workers 2 > ../../artifacts/metro.log 2>&1) &
+      - name: Wait for Metro and prepare Android bundle
+        run: |
+          curl --fail --silent --show-error --retry 20 --retry-delay 1 --retry-connrefused --max-time 5 http://127.0.0.1:8081/status | grep -Fx 'packager-status:running'
+          curl --fail --silent --show-error --max-time 180 'http://127.0.0.1:8081/index.bundle?platform=android&dev=true&lazy=false&minify=false&app=com.truckroutesavings&modulesOnly=false&runModule=true&excludeSource=true&sourcePaths=url-server' --output /dev/null
+          curl --fail --silent --show-error --max-time 60 'http://127.0.0.1:8081/index.bundle?platform=android&dev=true&lazy=true&minify=false&app=com.truckroutesavings&modulesOnly=false&runModule=true&excludeSource=true&sourcePaths=url-server' --output /dev/null
       - name: Enable KVM for runner user
         run: |
           sudo chown "$USER" /dev/kvm

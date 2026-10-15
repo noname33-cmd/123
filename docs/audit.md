@@ -164,6 +164,8 @@ JS-фундамент проверен в чистых Windows/Linux workspace, 
 - apps/mobile/scripts/build.cjs
 - apps/mobile/tsconfig.json
 - docs/audit.md
+
+
 - infra/compose.yaml
 - package.json
 - packages/navigation/README.md
@@ -271,11 +273,13 @@ Evidence ZIP digests сверены: android-smoke-evidence artifact 11952611745
 
 ## Продолжение: Prisma/PostgreSQL connection foundation
 
-Добавлен packages/database: DatabaseConnection port, PrismaDatabaseConnection adapter, CommonJS generated Prisma Client 7.10.0. Prisma CLI/Client/adapter-pg закреплены; Node минимум повышен до 22.12 по требованиям Prisma 7. Prisma latest указывал на 8 RC, поэтому выбрана проверенная stable 7.10.0. Схема без business models; generate/build не требуют URL. Generated source исключён из Git и включён в Turbo outputs. Отдельная зависимость build перед database typecheck предотвращает конкурентную генерацию. Dev-only react-dom 19.2.3 закрывает Prisma Studio peer и совпадает с текущим React.
+Добавлен packages/database: DatabaseConnection port, PrismaDatabaseConnection adapter, CommonJS generated Prisma Client 7.10.0. Prisma CLI/Client/adapter-pg закреплены; Диапазон Node ограничен 22.x (>=22.12) и 24.x по требованиям Prisma 7; неподдерживаемый Node 23 исключён. Prisma latest указывал на 8 RC, поэтому выбрана проверенная stable 7.10.0. Схема без business models; generate/build не требуют URL. Generated source исключён из Git и включён в Turbo outputs. Отдельная зависимость build перед database typecheck предотвращает конкурентную генерацию. Dev-only react-dom 19.2.3 закрывает Prisma Studio peer и совпадает с текущим React.
 
-Nest DatabaseModule создаёт один adapter через DI token, подключается и проверяет PostGIS на startup, закрывает pool на shutdown. DATABASE_URL обязателен, валидация требует PostgreSQL protocol/host/database/user/password. Нет fallback или runtime test mode. Ошибки конфигурации/startup не повторяют credentials. /health сохраняет смысл process liveness; постоянный DB readiness пока не реализован. Pool max 5, connection/statement timeout 5000 ms, idle timeout 10000 ms. SSL options передаются драйверу, проверка сертификатов не отключается.
+Nest DatabaseModule создаёт один adapter через DI token, подключается и проверяет PostGIS на startup, закрывает pool на shutdown. DATABASE_URL обязателен, валидация требует PostgreSQL protocol/host/database/user/password. Нет fallback или runtime test mode. Ошибки конфигурации/startup не повторяют credentials. /health сохраняет смысл process liveness; постоянный DB readiness пока не реализован. Pool max 5, connection/statement timeout 5000 ms, idle timeout 10000 ms. SSL options передаются драйверу без принудительного rejectUnauthorized: false; фактическая SSL policy зависит от connection options и требует production-проверки.
 
 Добавлен test:database: выделенный контейнер закреплённого PostGIS image, случайный пароль и loopback port, анонимный volume; finally удаляет только контейнер текущего запуска и его volume. Developer DATABASE_URL, Compose volumes и фиксированные host ports не используются. Реальные integration tests проверяют Nest startup, SELECT PostGIS_Lib_Version(), shutdown hook и неверный пароль с точной sanitized error. Дополнительный smoke запускает скомпилированный bootstrap с generated Prisma Client, выполняет HTTP /health и закрывает app; отдельный compiled main без DATABASE_URL завершается с кодом 1. CI checks включает эту команду.
+
+Промежуточная публикация README была обрезана лимитом вывода инструмента передачи. Файл восстановлен отдельным commit 60b6570; после fetch локальные исходники сверены с опубликованными, git status пуст. Следующий commit 8895796 уточнил поддерживаемые Node major versions и актуализировал README. Итоговый CI проверяется именно для 8895796; дефект передачи не затрагивал код.
 
 Промежуточные ошибки найдены и исправлены до публикации: TS weak-type несовместимость ProcessEnv; относительный ts-jest tsconfig при запуске из root. Оба реальных integration tests затем прошли, временные контейнеры удалены. Локально Windows/Node 24.19 прошли frozen install, lint, typecheck, build, unit/component (8 tests), HTTP (2), scripts (11), real database integration (2) и compiled smoke (успешный запуск + missing config). Итого 23 test assertions/cases в test runners плюс compiled smoke; не считать их business E2E. Некоторые неизменившиеся задачи использовали Turbo cache; чистый CI проверяется отдельно, результат ниже будет добавлен после выполнения.
 
@@ -311,3 +315,13 @@ Nest DatabaseModule создаёт один adapter через DI token, под�
 - pnpm-workspace.yaml
 - turbo.json
 - docs/audit.md
+
+### Результаты CI для database foundation
+
+[Run 38701537980](https://github.com/noname33-cmd/123/actions/runs/38701537980), commit `8895796d1cf01423d254c6cba625f7bad42a2120`. Checks прошёл на чистом Linux/Node 22.22.0: frozen install, lint, typecheck, build, 23 JS/unit/component/HTTP/script/database tests, compiled API smoke (реальный DB + HTTP + shutdown; missing config exit 1), PostGIS/Redis checks и cleanup. iOS native build/deployment pod install и UI smoke прошли: 1 XCTest, 0 failures, 13.539 секунды, iPhone 16/iOS 18.5/Xcode 16.4. Evidence artifact 11956986160, ZIP SHA-256 8c9a077a81975169a21828cc5662d31fe154bc67c1731941729a89e6e1a7ad57 совпал с GitHub digest. Screenshot просмотрен: все три текста видимы без обрезки. Evidence не входит в Git.
+
+Первый Android job этого run: APK build, strict-lock negative check и неизменность lockfiles прошли; UI smoke не увидел три текста за окно ожидания. Metro лог показывает позднее завершение cold bundle и сообщение об ошибке установки DevTools sandbox; причинная связь со сбоем UI не доказана. UI XML/screenshot при таком раннем failure существующий smoke script не сохраняет, поэтому причина не установлена. Failure evidence artifact 11956980739 сохранён локально, ZIP SHA-256 05df4580d8927042c70eb9536721bdfb93d1ecd667ae124a629fd14a00e8bcfd сверён с digest. Это не выдаётся за успешный первый прогон. Запущен повтор только failed Android job без изменений исходников и assertions.
+
+Предыдущий полный run 38700779813 на commit 60b6570 прошёл checks/android/ios; он не заменяет проверку финального диапазона Node. Повтор Android job (attempt 2) также не увидел shell texts; это не считается устранённой случайной ошибкой.
+
+Отдельно не выполнялись: проверка процесса через настоящий SIGTERM (проверен app.close и успешное завершение compiled smoke), отсутствие PostGIS как отдельный negative integration scenario, production TLS/load/recovery, physical devices/release signing и business E2E. После второго failure добавлены явная готовность Metro, предварительная сборка полного и lazy Android bundles перед emulator smoke и сохранение UI XML/screenshot/PID logs при неуспешной UI-проверке. URL options сверены с установленным React Native 0.84 DevServerHelper.kt. Assertions и число UI retries не ослаблены. Добавлен unit test: screenshot failure не должен терять UI XML/app logs или маскировать исходную UI assertion. Локально lint и 12 script tests прошли. Эти изменения ограничены CI-проверкой foundation; новый CI будет проверен отдельно. Следующий domain contract/migrations остаётся отдельной задачей.

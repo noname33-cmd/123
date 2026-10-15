@@ -41,14 +41,15 @@ function configFromEnv(env) {
   };
 }
 
-async function verifyAndroid(config) {
-  const manifest = spawnSync(config.aapt2, ['dump', 'badging', config.apk], {
+async function verifyAndroid(config, {spawn = spawnSync,
+  pause = () => new Promise(resolve => setTimeout(resolve, 2000))} = {}) {
+  const manifest = spawn(config.aapt2, ['dump', 'badging', config.apk], {
     encoding: 'utf8', timeout: 30000,
   });
   if (manifest.error || manifest.status !== 0) {throw new Error('APK manifest inspection failed');}
   assertApkIdentity(manifest.stdout);
   const adb = (...args) => {
-    const result = spawnSync(config.adb, ['-s', config.serial, ...args], {
+    const result = spawn(config.adb, ['-s', config.serial, ...args], {
       encoding: 'utf8', timeout: 30000,
     });
     if (result.error || result.status !== 0) {
@@ -76,21 +77,36 @@ async function verifyAndroid(config) {
         break;
       } catch (error) {
         lastError = error;
-        await new Promise(resolve => setTimeout(resolve, 2000));
+        await pause();
       }
     }
+    fs.mkdirSync(config.artifacts, {recursive: true});
+    if (xml) {fs.writeFileSync(path.join(config.artifacts, 'ui.xml'), xml);}
+    const evidenceErrors = [];
+    const capture = (name, action) => {
+      try {return action();}
+      catch (error) {evidenceErrors.push(`${name}: ${error.message}`); return undefined;}
+    };
+    // Retain independent diagnostics even if a UI assertion or screenshot fails.
+    capture('screenshot', () => {
+      adb('shell', 'screencap', '-p', `${remoteBase}.png`);
+      adb('pull', `${remoteBase}.png`, path.join(config.artifacts, 'screen.png'));
+    });
+    const pid = capture('pid', () => adb('shell', 'pidof', '-s', packageName));
+    const logs = /^\d+$/.test(pid ?? '') ? capture('logs', () => {
+      const value = adb('logcat', '-d', '--pid', pid, '-t', '200');
+      fs.writeFileSync(path.join(config.artifacts, 'app.log'), value);
+      return value;
+    }) : undefined;
+    if (evidenceErrors.length) {
+      fs.writeFileSync(path.join(config.artifacts, 'capture-errors.txt'), evidenceErrors.join('\n'));
+    }
     if (lastError) {throw lastError;}
-    const pid = adb('shell', 'pidof', '-s', packageName);
     if (!/^\d+$/.test(pid)) {throw new Error('App process is no longer running');}
-    const logs = adb('logcat', '-d', '--pid', pid, '-t', '200');
+    if (evidenceErrors.length || logs === undefined) {throw new Error('Android evidence collection failed');}
     if (/FATAL EXCEPTION|JavascriptException|ReactNativeJS.*Error:/.test(logs)) {
       throw new Error('App logs contain a native or JavaScript error');
     }
-    fs.mkdirSync(config.artifacts, {recursive: true});
-    fs.writeFileSync(path.join(config.artifacts, 'ui.xml'), xml);
-    fs.writeFileSync(path.join(config.artifacts, 'app.log'), logs);
-    adb('shell', 'screencap', '-p', `${remoteBase}.png`);
-    adb('pull', `${remoteBase}.png`, path.join(config.artifacts, 'screen.png'));
     console.log(`Android shell passed on ${config.serial}; artifacts: ${config.artifacts}`);
   } finally {
     adb('shell', 'rm', '-f', `${remoteBase}.xml`, `${remoteBase}.png`);
