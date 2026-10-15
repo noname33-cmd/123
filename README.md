@@ -1,6 +1,6 @@
 # Truck Route & Savings
 
-Базовый monorepo для приложения американских truck drivers. В этой итерации есть только shell, health endpoint и граница NavigationEngine. Truck routing, GPS, HERE SDK, пользовательская авторизация, savings и production deployment не реализованы.
+Базовый monorepo для приложения американских truck drivers: shell, health endpoint, граница NavigationEngine и подключение NestJS к PostgreSQL/PostGIS через Prisma adapter. Truck routing, GPS, HERE SDK, пользовательская авторизация, savings и production deployment не реализованы.
 
 ## Структура
 
@@ -16,7 +16,7 @@
 
 ## Установка и JS-проверки
 
-Требуются Node >=22.12 <25 (CI: 22.22.0), pnpm **10.28.2**, Docker Compose v2 для инфраструктуры. Минимум Node поднят по требованиям Prisma 7. Установите указанную версию pnpm доступным для вашей среды способом. В стандартной Node-installation: `npm install -g pnpm@10.28.2`.
+Требуются Node 22.x (>=22.12) или 24.x (CI: 22.22.0), pnpm **10.28.2**, Docker Compose v2 для инфраструктуры. Допустимые major versions ограничены по требованиям Prisma 7; Node 23 не поддерживается. Установите указанную версию pnpm доступным для вашей среды способом. В стандартной Node-installation: `npm install -g pnpm@10.28.2`.
 
 ```sh
 pnpm install --frozen-lockfile
@@ -183,4 +183,4 @@ bash gradlew resolveDependencyLocks --write-locks -PreactNativeArchitectures=x86
 
 Отдельные границы: settings/plugin-management classpaths, included builds RN Gradle plugin и buildscript classpaths сторонних библиотек не покрыты этими project lockfiles. Их исходные версии закреплены pnpm-lock; отдельный locking этих build contexts и проверка Maven artifact checksums остаются будущими задачами. Release graph resolution не означает выполненную release binary/signing проверку.
 
-[Официальная документация Gradle locking](https://docs.gradle.org/current/userguide/dependency_locking.html); используемые методы ResolutionResult и UnresolvedDependencyResult сверены с установленным Gradle 9.0.0. Локально resolveDependencyLocks + assembleDebug x86_64 прошли без --write-locks (88 tasks, 2m29s). Missing app state и missing root buildscript lock отвергнуты отдельными negative checks; все три lockfile не изменились. [Чистый CI](https://github.com/noname33-cmd/123/actions/runs/38691647263) на commit ac50fb210d1a5567ac2e4014c866baadf07e9eca прошёл полностью: checks, android, ios. Подтверждены frozen install, lint, typecheck, JS/native builds, 14 JS tests, PostGIS/Redis, Android strict-lock checks и device smoke, 1 iOS XCTest без ошибок. Lockfiles после сборки не изменились. Следующий отдельный шаг — подключить Prisma к PostgreSQL в backend с integration test; дополнительные build contexts и Maven checksum verification остаются отдельными границами текущего locking.
+[Официальная документация Gradle locking](https://docs.gradle.org/current/userguide/dependency_locking.html); используемые методы ResolutionResult и UnresolvedDependencyResult сверены с установленным Gradle 9.0.0. Локально resolveDependencyLocks + assembleDebug x86_64 прошли без --write-locks (88 tasks, 2m29s). Missing app state и missing root buildscript lock отвергнуты отдельными negative checks; все три lockfile не изменились. [Чистый CI](https://github.com/noname33-cmd/123/actions/runs/38691647263) на commit ac50fb210d1a5567ac2e4014c866baadf07e9eca прошёл полностью: checks, android, ios. Подтверждены frozen install, lint, typecheck, JS/native builds, 14 JS tests, PostGIS/Redis, Android strict-lock checks и device smoke, 1 iOS XCTest без ошибок. Lockfiles после сборки не изменились. Подключение Prisma добавлено следующим отдельным шагом (описано выше); дополнительные build contexts и Maven checksum verification остаются отдельными границами текущего locking.
