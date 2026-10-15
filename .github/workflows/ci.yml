@@ -1,0 +1,106 @@
+name: foundation
+on: [push, pull_request]
+permissions:
+  contents: read
+jobs:
+  checks:
+    runs-on: ubuntu-latest
+    env:
+      POSTGRES_PASSWORD: ci-local-ephemeral
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22.22.0'
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm lint
+      - run: pnpm typecheck
+      - run: pnpm build
+      - run: pnpm test
+      - run: pnpm test:e2e
+      - run: pnpm test:scripts
+      - name: Start infrastructure
+        env:
+          POSTGRES_PASSWORD: ci-local-ephemeral
+        run: pnpm infra:up
+      - run: pnpm test:infra
+      - if: always()
+        env:
+          POSTGRES_PASSWORD: ci-local-ephemeral
+        run: pnpm infra:down
+  android:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22.22.0'
+          cache: pnpm
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - uses: android-actions/setup-android@v3
+        with:
+          cmdline-tools-version: '13114758'
+          packages: platform-tools
+      - run: sdkmanager 'platforms;android-36' 'build-tools;36.0.0' 'build-tools;35.0.0' 'ndk;27.1.12297006' 'cmake;3.22.1'
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm --filter @truck/navigation build
+      - name: Create local debug key
+        run: |
+          mkdir -p "$HOME/.android"
+          keytool -genkeypair -keystore "$HOME/.android/debug.keystore" -storepass android -alias androiddebugkey -keypass android -dname 'CN=Android Debug,O=Android,C=US' -keyalg RSA -keysize 2048 -validity 10000
+      - working-directory: apps/mobile/android
+        run: bash gradlew assembleDebug -PreactNativeArchitectures=x86_64 --max-workers=2 --no-daemon
+      - uses: actions/upload-artifact@v4
+        with:
+          name: android-debug-x86_64
+          path: apps/mobile/android/app/build/outputs/apk/debug/app-debug.apk
+          if-no-files-found: error
+      - name: Start Metro
+        run: |
+          mkdir -p artifacts
+          (cd apps/mobile && pnpm start --no-interactive --max-workers 2 > ../../artifacts/metro.log 2>&1) &
+      - uses: reactivecircus/android-emulator-runner@v2
+        with:
+          api-level: 35
+          target: default
+          arch: x86_64
+          profile: pixel_6
+          ram-size: 2048M
+          emulator-port: 5554
+          emulator-options: -no-window -gpu software -no-snapshot -noaudio -no-boot-anim
+          script: ANDROID_SERIAL=emulator-5554 ANDROID_APK_PATH="$GITHUB_WORKSPACE/apps/mobile/android/app/build/outputs/apk/debug/app-debug.apk" pnpm test:android
+      - if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: android-smoke-evidence
+          path: artifacts/
+          if-no-files-found: warn
+  ios:
+    runs-on: macos-15
+    env:
+      BUNDLE_FROZEN: 'true'
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22.22.0'
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm --filter @truck/navigation build
+      - uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: '3.3.12'
+          bundler: '2.5.22'
+          working-directory: apps/mobile
+          bundler-cache: true
+      - working-directory: apps/mobile/ios
+        run: bundle exec pod install
+      - working-directory: apps/mobile/ios
+        run: xcodebuild -workspace TruckRouteSavings.xcworkspace -scheme TruckRouteSavings -configuration Debug -sdk iphonesimulator -destination 'generic/platform=iOS Simulator' CODE_SIGNING_ALLOWED=NO build

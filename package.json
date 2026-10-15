@@ -1,0 +1,16 @@
+{
+  "name": "truck-route-savings", "version": "0.1.0", "private": true,
+  "packageManager": "pnpm@10.28.2", "engines": {"node": ">=22.11.0 <25"},
+  "scripts": {
+    "build": "turbo run build", "lint": "eslint scripts --ext .cjs --max-warnings 0 && turbo run lint", "test": "turbo run test",
+    "typecheck": "turbo run typecheck", "test:e2e": "pnpm --filter @truck/api test:e2e",
+    "dev:api": "pnpm --filter @truck/api dev", "dev:mobile": "pnpm --filter @truck/mobile start",
+    "infra:up": "docker compose -f infra/compose.yaml up -d --wait",
+    "infra:down": "docker compose -f infra/compose.yaml down",
+    "infra:check": "docker compose -f infra/compose.yaml config --quiet",
+    "test:infra": "node scripts/verify-infra.cjs",
+    "test:scripts": "node --test scripts/*.test.cjs",
+    "test:android": "node scripts/verify-android.cjs"
+  },
+  "devDependencies": {"turbo": "2.11.8", "typescript": "5.9.3", "eslint": "8.57.1", "@typescript-eslint/parser": "7.18.0", "@typescript-eslint/eslint-plugin": "7.18.0"}
+}

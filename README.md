@@ -140,4 +140,3 @@ HERE Navigate не установлен. До интеграции нужно п
 - [Community template 0.84.0](https://www.npmjs.com/package/@react-native-community/template/v/0.84.0)
 
 Состояние проверок и следующий шаг описаны в `docs/audit.md`. Наличие workflow не означает успешный запуск CI или native builds.
-
