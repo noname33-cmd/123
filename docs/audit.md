@@ -61,7 +61,7 @@ Android Emulator 37.3.4 (build 16555280) и AOSP API 35 default x86_64 system im
 
 - Android release binary, 32-bit ABIs и запуск на физическом ARM-устройстве не проверены. Debug x86_64/arm64-v8a builds и signature/manifest inspection прошли; runtime smoke выполнен только на API 35 x86_64 AVD.
 - CocoaPods install, Xcode native build и запуск на simulator/device: не выполнены, требуется macOS/Xcode.
-- GitHub Actions не запускался: нет remote/публикации. YAML parsing не подтверждает успех workflow.
+- GitHub Actions запущен после разрешённой публикации в noname33-cmd/123; результат пока ожидается. YAML parsing не подтверждает успех workflow.
 - Установка на отдельной физической машине не выполнялась; проверены чистый Windows workspace и изолированный Linux container без package cache.
 - Реализован и выполнен только Android launch/UI smoke. Полные business E2E, другие API levels и физические устройства не проверены; iOS runtime не проверен.
 - Gemfile.lock создан и frozen install проверен в Linux. Podfile.lock и Gradle dependency lockfiles по-прежнему отсутствуют; полную воспроизводимость native builds пока заявлять нельзя.
@@ -73,7 +73,7 @@ Android Emulator 37.3.4 (build 16555280) и AOSP API 35 default x86_64 system im
 
 ## Критерий завершения
 
-JS-фундамент проверен в чистых Windows/Linux workspace, infrastructure runtime подтверждён, Android debug x86_64/arm64 APK собраны, x86_64 shell реально запущен на AVD. Всего прошли 11 unit/component/HTTP/script tests плюс Android device smoke и infrastructure runtime checks. Полный критерий задачи пока **не подтверждён**: остаются iOS native build/runtime и фактический GitHub CI run. GitHub подключён, но целевой репозиторий ещё не выбран и публикация исходников не разрешена; macOS runner отдельно не предоставлен. Следующий шаг — выбрать репозиторий для CI или macOS runner, выполнить проверки и получить native lockfiles. Реальная HERE/GPS интеграция не добавляется.
+JS-фундамент проверен в чистых Windows/Linux workspace, infrastructure runtime подтверждён, Android debug x86_64/arm64 APK собраны, x86_64 shell реально запущен на AVD. Всего прошли 11 unit/component/HTTP/script tests плюс Android device smoke и infrastructure runtime checks. Полный критерий задачи пока **не подтверждён**: остаются iOS native build/runtime и фактический GitHub CI run. Пользователь разрешил публикацию в noname33-cmd/123 и запуск CI с macOS/iOS. Исходники опубликованы, CI запущен. Следующий шаг — разобрать результаты всех jobs и получить native lockfiles. Реальная HERE/GPS интеграция не добавляется.
 
 ## Продолжение 2026-10-15: Linux и Ruby reproducibility
 
@@ -81,7 +81,7 @@ JS-фундамент проверен в чистых Windows/Linux workspace, 
 
 Из исходного Gemfile без изменения ограничений создан Gemfile.lock с Darwin Intel/ARM platforms. Ruby 3.3.12 зафиксирован в `.ruby-version` и CI; Bundler 2.5.22 — в lockfile и CI. В отдельном Linux-контейнере frozen bundle install, bundle check и Ruby require CocoaPods/Xcodeproj успешны: 45 gems, CocoaPods 1.15.2, Xcodeproj 1.25.1. SHA-256 lockfile до/после frozen install совпадает: `1ad9ce8f5cfbf9829c4d3e502179d641dcaf9d5ae273e69481718d3b7133fc97`. Image: `ruby:3.3-slim-bookworm@sha256:2e32876dfe84913ec84eb4a59617f72dab7c0989d38f8219487491e384543975`. Native extensions компилировались внутри контейнера; host Ruby не устанавливался. Darwin install, pod install и Xcode build не выполнялись и этим результатом не подтверждаются.
 
-GitHub интеграция подключена; профиль и доступ к репозиториям подтверждены read-only запросами. Репозиторий по имени проекта не найден. Доступен пустой публичный `noname33-cmd/123`, но он ещё не выбран пользователем для Tracker. Ни remote, ни публикация файлов, ни GitHub CI run не выполнялись. Для следующего шага требуется выбор целевого репозитория и разрешение на публикацию подготовленных исходников/CI либо доступ к macOS runner. Все временные Linux/Ruby контейнеры завершены и удалены.
+С разрешения пользователя опубликованы 87 исходных файлов в публичный репозиторий [noname33-cmd/123](https://github.com/noname33-cmd/123). Коммит `370dfe80dd66bde12d356e263a28e94a8f10321a`, [CI run 38681590319](https://github.com/noname33-cmd/123/actions/runs/38681590319). Результат CI ожидается; запуск workflow сам по себе не подтверждает успешные сборки. APK, screenshots, node_modules, локальные SDK и ключи исключены. Все временные Linux/Ruby контейнеры завершены и удалены.
 
 Файлы этой итерации: `apps/mobile/.ruby-version`, `apps/mobile/Gemfile.lock`, `.github/workflows/ci.yml`, `README.md`, `docs/audit.md`. Исходники приложения не менялись, новые feature modules не добавлялись.
 

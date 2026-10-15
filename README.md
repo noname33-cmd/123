@@ -102,13 +102,13 @@ POSIX: задайте те же переменные через `export`. Нуж
 
 Успех требует трёх текстов shell в реальном UI hierarchy и живого app process. Screenshot, UI XML и последние 200 строк логов текущего PID сохраняются в `artifacts/android-smoke/` (не коммитятся). Проверка логов обнаруживает указанные fatal/JS error markers; она не доказывает отсутствие любых ошибок. Команда не очищает глобальный logcat и не снимает защищённую блокировку устройства.
 
-Локальный emulator запускается из AVD, созданного через SDK Manager/avdmanager. Перед запуском проверьте `emulator -accel-check`. На проверочной Windows-машине WHPX уже был включён; новых hypervisor drivers и reboot не понадобилось. CI содержит запуск API 35 x86_64 AVD, device smoke и загрузку evidence artifacts, но сам GitHub run ещё не выполнялся.
+Локальный emulator запускается из AVD, созданного через SDK Manager/avdmanager. Перед запуском проверьте `emulator -accel-check`. На проверочной Windows-машине WHPX уже был включён; новых hypervisor drivers и reboot не понадобилось. CI содержит запуск API 35 x86_64 AVD, device smoke и загрузку evidence artifacts, GitHub run запущен, результат ожидается.
 
 Официальные инструкции: [Emulator acceleration](https://developer.android.com/studio/run/emulator-acceleration), [Emulator CLI](https://developer.android.com/studio/run/emulator-commandline), [ADB](https://developer.android.com/tools/adb).
 
 ## iOS shell (только macOS)
 
-Нужны Xcode ≥16.1 и iOS deployment target ≥15.1; эти минимумы проверены в scripts/cocoapods/helpers.rb установленного React Native 0.84.0. Ruby 3.3.12 зафиксирован в apps/mobile/.ruby-version, Bundler 2.5.22 и Ruby gems — в Gemfile.lock. Lock содержит arm64-darwin и x86_64-darwin. Версии CocoaPods 1.15.2 и Xcodeproj 1.25.1 получены из существующих ограничений Gemfile; их совместимость с Xcode ещё требует macOS-проверки. В CI используется macos-15 с frozen Bundler, но выполнение CI ещё необходимо подтвердить.
+Нужны Xcode ≥16.1 и iOS deployment target ≥15.1; эти минимумы проверены в scripts/cocoapods/helpers.rb установленного React Native 0.84.0. Ruby 3.3.12 зафиксирован в apps/mobile/.ruby-version, Bundler 2.5.22 и Ruby gems — в Gemfile.lock. Lock содержит arm64-darwin и x86_64-darwin. Версии CocoaPods 1.15.2 и Xcodeproj 1.25.1 получены из существующих ограничений Gemfile; их совместимость с Xcode ещё требует macOS-проверки. В CI используется macos-15 с frozen Bundler, CI запущен, результат ещё необходимо подтвердить.
 
 ```sh
 pnpm --filter @truck/navigation build
@@ -140,3 +140,5 @@ HERE Navigate не установлен. До интеграции нужно п
 - [Community template 0.84.0](https://www.npmjs.com/package/@react-native-community/template/v/0.84.0)
 
 Состояние проверок и следующий шаг описаны в `docs/audit.md`. Наличие workflow не означает успешный запуск CI или native builds.
+
+Публикация исходников: [noname33-cmd/123](https://github.com/noname33-cmd/123). Первый [CI run](https://github.com/noname33-cmd/123/actions/runs/38681590319) запущен; итог ожидается.

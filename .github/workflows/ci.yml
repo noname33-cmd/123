@@ -103,4 +103,14 @@ jobs:
       - working-directory: apps/mobile/ios
         run: bundle exec pod install
       - working-directory: apps/mobile/ios
-        run: xcodebuild -workspace TruckRouteSavings.xcworkspace -scheme TruckRouteSavings -configuration Debug -sdk iphonesimulator -destination 'generic/platform=iOS Simulator' CODE_SIGNING_ALLOWED=NO build
+        run: |
+          set -o pipefail
+          xcodebuild -workspace TruckRouteSavings.xcworkspace -scheme TruckRouteSavings -configuration Debug -sdk iphonesimulator -destination 'generic/platform=iOS Simulator' CODE_SIGNING_ALLOWED=NO build 2>&1 | tee xcodebuild.log
+      - if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ios-build-evidence
+          path: |
+            apps/mobile/ios/Podfile.lock
+            apps/mobile/ios/xcodebuild.log
+          if-no-files-found: warn
