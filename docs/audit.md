@@ -285,7 +285,7 @@ Nest DatabaseModule создаёт один adapter через DI token, под�
 
 Не добавлены/не проверены: business models/migrations, spatial ORM mapping, Redis/BullMQ backend adapter, production TLS/auth/pooling/load/recovery behaviour, readiness после разрыва соединения, physical devices/release signing, HERE/GPS. При принудительном завершении test harness finally может не выполниться; проверяйте адресно оставшиеся truck-db-integration-* контейнеры. Следующий отдельный шаг — согласование первого domain contract и migrations с явными единицами измерения и денежными типами.
 
-Изменённые/добавленные файлы этой задачи:
+Изменённые/добавленные файлы этой задачи (30):
 
 - .github/workflows/ci.yml
 - .gitignore
@@ -307,6 +307,8 @@ Nest DatabaseModule создаёт один adapter через DI token, под�
 - packages/database/src/prisma-database-connection.ts
 - packages/database/test/config.unit.test.cjs
 - packages/database/tsconfig.json
+- scripts/verify-android.cjs
+- scripts/verify-android.test.cjs
 - scripts/verify-api-database.cjs
 - scripts/verify-database.cjs
 - scripts/verify-database.test.cjs
@@ -324,4 +326,17 @@ Nest DatabaseModule создаёт один adapter через DI token, под�
 
 Предыдущий полный run 38700779813 на commit 60b6570 прошёл checks/android/ios; он не заменяет проверку финального диапазона Node. Повтор Android job (attempt 2) также не увидел shell texts; это не считается устранённой случайной ошибкой.
 
-Отдельно не выполнялись: проверка процесса через настоящий SIGTERM (проверен app.close и успешное завершение compiled smoke), отсутствие PostGIS как отдельный negative integration scenario, production TLS/load/recovery, physical devices/release signing и business E2E. После второго failure добавлены явная готовность Metro, предварительная сборка полного и lazy Android bundles перед emulator smoke и сохранение UI XML/screenshot/PID logs при неуспешной UI-проверке. URL options сверены с установленным React Native 0.84 DevServerHelper.kt. Assertions и число UI retries не ослаблены. Добавлен unit test: screenshot failure не должен терять UI XML/app logs или маскировать исходную UI assertion. Локально lint и 12 script tests прошли. Эти изменения ограничены CI-проверкой foundation; новый CI будет проверен отдельно. Следующий domain contract/migrations остаётся отдельной задачей.
+Отдельно не выполнялись: проверка процесса через настоящий SIGTERM (проверен app.close и успешное завершение compiled smoke), отсутствие PostGIS как отдельный negative integration scenario, production TLS/load/recovery, physical devices/release signing и business E2E. После второго failure добавлены явная готовность Metro, предварительная сборка полного и lazy Android bundles перед emulator smoke и сохранение UI XML/screenshot/PID logs при неуспешной UI-проверке. URL options сверены с установленным React Native 0.84 DevServerHelper.kt. Assertions и число UI retries не ослаблены. Добавлен unit test: screenshot failure не должен терять UI XML/app logs или маскировать исходную UI assertion. Локально lint и 12 script tests прошли. Эти изменения ограничены CI-проверкой foundation; итог нового CI зафиксирован ниже. Следующий domain contract/migrations остаётся отдельной задачей.
+
+### CI после подготовки Metro и сохранения failure evidence
+
+[Run 38704005945](https://github.com/noname33-cmd/123/actions/runs/38704005945), commit `3e1f853ff921f8c340768ffc58533b7609f56766`: checks, android и ios success с первой попытки нового run.
+
+Чистый Linux/Node 22.22.0 выполнил frozen install, lint, typecheck, build, 24 JS/unit/component/HTTP/script/database tests (8 unit/component + 2 HTTP + 12 scripts + 2 database), compiled API smoke и PostGIS/Redis checks. Database test использует отдельный одноразовый container и удаляет его volume. Локально Node 24.19.0 повторно выполнены lint и 12 script tests для изменённого harness; предыдущие backend build/typecheck/unit/HTTP/integration checks перечислены выше.
+
+Android fresh runner: graph resolution и APK build прошли без --write-locks, negative missing-lock check и git diff lockfiles успешны. До emulator запуска Metro вернул packager-status:running, полный и lazy bundle запросы завершились успешно; затем API 35 x86_64 device smoke проверил shell. Assertions/retries не ослаблялись. Screenshot просмотрен, три текста видимы без обрезки. Artifact 11957029913, ZIP SHA-256 c4d2fd42cbc18445bcf2f1b12bc57c21e0c081cbcf4125870cad8f0bc976e308 совпал с GitHub digest. В Metro log успешного run также остаётся ошибка optional DevTools installer sandbox; она не помешала проверенному запуску, sandbox не отключался. Точная причина предыдущих UI failures не доказана, а успешный run после prewarm не гарантирует отсутствие любых будущих flakes.
+Итог iOS: Simulator build и настоящий FoundationSmokeTests.testFoundationShellIsVisible прошли на iPhone 16/iOS 18.5/Xcode 16.4: 1 test, 0 failures, 24.790 секунды самого теста. Вся фаза подготовки/запуска тестов заняла дольше; она завершилась штатно, без отключения assertions. Artifact 11958486179, ZIP SHA-256 73af0fdf2bcd2dd19aeeccbcb34df1f2ec417749bd17389e59631929f4603e8e сверён с GitHub digest. Screenshot просмотрен: три текста видимы без обрезки; стандартный Debug Metro banner остаётся. CI simulator удалён успешно.
+
+Итого: install/build/test/start подтверждены на указанных Node/OS и disposable DB; это не подтверждение production readiness или HERE/GPS integration. Невыполненные проверки и риски перечислены выше (TLS/load/recovery, настоящий SIGTERM, отдельный negative без PostGIS, physical/release/business E2E, optional DevTools installation, возможные будущие native flakes). Следующий отдельный шаг — согласовать первый domain contract, его единицы/денежные типы и затем migrations. HERE SDK требует отдельной проверки лицензии и совместимости до установки.
+
+Итоговая публикация изменяет только README и этот audit с [skip ci]; исполняемый код и workflow совпадают с проверенным commit 3e1f853. Полный список 30 файлов этой задачи приведён выше. Локальный git diff --check прошёл; generated Client, binaries, screenshots, tools и credentials в Git не включены.
