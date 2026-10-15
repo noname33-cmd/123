@@ -1,0 +1,10 @@
+{
+  "name": "@truck/truck-profile", "version": "0.1.0", "private": true,
+  "main": "dist/index.js", "types": "dist/index.d.ts",
+  "scripts": {
+    "build": "tsc",
+    "typecheck": "tsc --noEmit && tsc -p tsconfig.type-tests.json",
+    "lint": "eslint src test --ext .ts,.cjs --max-warnings 0",
+    "test": "node --test test/*.test.cjs"
+  }
+}

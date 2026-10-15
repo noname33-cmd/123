@@ -340,3 +340,195 @@ Android fresh runner: graph resolution и APK build прошли без --write-
 Итого: install/build/test/start подтверждены на указанных Node/OS и disposable DB; это не подтверждение production readiness или HERE/GPS integration. Невыполненные проверки и риски перечислены выше (TLS/load/recovery, настоящий SIGTERM, отдельный negative без PostGIS, physical/release/business E2E, optional DevTools installation, возможные будущие native flakes). Следующий отдельный шаг — согласовать первый domain contract, его единицы/денежные типы и затем migrations. HERE SDK требует отдельной проверки лицензии и совместимости до установки.
 
 Итоговая публикация изменяет только README и этот audit с [skip ci]; исполняемый код и workflow совпадают с проверенным commit 3e1f853. Полный список 30 файлов этой задачи приведён выше. Локальный git diff --check прошёл; generated Client, binaries, screenshots, tools и credentials в Git не включены.
+
+## Продолжение: локальный start/status/stop и окно Android (Windows)
+
+По выбранной пользователем задаче добавлены команды pnpm local:up/local:status/local:down и прямой entrypoint node scripts/local.cjs up|status|down. Source changes (5 файлов): package.json, scripts/local.cjs, scripts/local.test.cjs, README.md, docs/audit.md. Machine-specific config, state, logs и UI evidence находятся только в ignored artifacts/local-run; .env остаётся локальным и не выводится в лог.
+
+Up проверяет занятость API/Metro/emulator ports без остановки посторонних процессов, запускает фиксированный Compose project truck-route-savings, проверяет PostgreSQL/PostGIS/Redis, генерирует Prisma Client и компилирует database/API/navigation установленными Node tools. Затем скрыто запускает API и Metro, прогревает bundles, открывает видимое окно заданного Android AVD, устанавливает настроенный debug APK и проверяет shell текущим Android smoke. Native SDK installation/build в эту команду не включены. Конфигурация использует абсолютные локальные SDK/AVD/APK paths; пример в README не содержит настоящих machine paths или credentials.
+
+State привязан к checkout и сохраняет PID/executable/command line/UTC creation time. Down перепроверяет идентичность непосредственно перед Stop-Process; повторно использованный PID не останавливается. Для emulator сначала проверяются собственные launcher/qemu snapshots и имя AVD, затем используется adb emu kill, с fallback только на проверенные собственные процессы. Остановка ждёт освобождения управляемых портов. Compose stop не удаляет volumes и закреплён explicit project name; окружение чужого COMPOSE_PROJECT_NAME не подменяет project. Node stop здесь предназначен для local dev, graceful production shutdown не заявляется.
+
+При missing .env и уже существующем PostgreSQL volume команда требует восстановить исходный пароль. При отсутствии обоих .env создаётся со случайным local-only password; .env и state не коммитятся. Local DATABASE_URL ограничен соответствующей loopback Compose DB без query/hash, password сверяется с POSTGRES_PASSWORD; в API передаётся URL, в Metro/emulator DB credentials не передаются. При ошибке запуска закрываются новые собственные процессы и останавливаются только services, которые до up не работали. Atomic state write и lock исключают конкурентную запись; read-only status доступен во время startup. После принудительного завершения может понадобиться проверка stale lock вручную.
+
+Фактически проверено на Windows / Node 24.19.0 / pnpm 10.28.2:
+
+- lint и 18 script tests (6 новых local tests): reused PID/изменённая identity, foreign AVD, занятый порт с сохранением listener, отказ readiness, запрет remote/mismatched DB и query overrides, Windows CRCRLF ADB response.
+- Negative real startup поверх ранее вручную запущенного API: отказ Port 3000 is occupied, исходный /health продолжил отвечать. Foreign processes не присваиваются команде.
+- Полный up: реальная PostGIS/Redis verification, generation/build, API health, Metro full/lazy HTTP bundles, Android API 35 x86_64 boot, APK install и UI smoke. Окно qemu подтверждено через MainWindowTitle Android Emulator - TruckFoundationApi35:5554 и ненулевой handle.
+- Повторный up работающего managed стенда показал status без новых процессов; status во время запуска работал.
+- Down: API/Metro/qemu/launcher завершились, оба ранее записанных Metro worker PID исчезли, порты 3000/8081/5554/5555 освободились, контейнеры проекта остановились, volumes остались. Повторный down прошёл.
+- Следующий up и Android smoke прошли. PostgreSQL system_identifier до/после down/up совпал; оба volume names совпали. Это проверка сохранения кластера/volumes, не отдельный бизнес-тест durability.
+- Status при COMPOSE_PROJECT_NAME=not-this-project показал правильные project containers; они healthy, API/Metro ready, Android booted. Стенд оставлен работающим с видимым окном.
+
+Промежуточные проблемы исправлены: глобальный pnpm shim пытался запускать неподходящий install при nested Turbo build — helper теперь вызывает установленные Prisma/TypeScript напрямую, без installation; Windows ADB вернул CRCRLF в имени AVD — разбор исправлен и покрыт regression test. При AVD mismatch rollback завершил новые процессы, сохранив ранее запущенную инфраструктуру.
+
+В этой задаче не выполнялись: новая установка dependencies (они не изменены), native APK rebuild, macOS/Linux local:* automation, Windows GUI CI, production/graceful stop и проверка принудительного завершения CLI/всех crash windows, отдельный fresh-volume сценарий автосоздания .env и rollback вновь запущенных Docker services, запуск под другими Windows accounts. GitHub CI/публикация для этих локальных изменений не запускались. Предыдущие CI results выше относятся к прежнему проверенному commit. Настроенный debug APK существовал ранее, текущий JS подаётся Metro из этого checkout; при native changes APK нужно пересобрать отдельно. CIM permissions и оставшийся stale lock после force-close могут требовать локального устранения; команды не меняют системную execution policy, UAC или SDK settings.
+
+Следующий шаг — ручная проверка shell в открытом окне; продуктовые модули, routing/GPS, auth и domain migrations в эту задачу не включены.
+
+## Продолжение: первый truck profile contract
+
+Перед работой проверены существующие docs, package conventions и локальный стенд. API/Metro ready, PostgreSQL/PostGIS и Redis healthy, Android booted. Повторный Android smoke на текущем локальном shell прошёл; screenshot просмотрен — три текста видимы без обрезки. Evidence находится в ignored artifacts/local-review/android. В логе нет markers, отклоняемых smoke script; это не доказательство отсутствия любых runtime ошибок.
+
+Добавлен чистый packages/truck-profile без dependencies: branded decimal SI types, runtime parsers и TruckProfile schemaVersion 1. На запрос типа транспорта ответа в ходе работы не поступило; минимальное рабочее допущение явно обозначено — тягач с одним полуприцепом. Другие типы отклоняются до отдельного решения. Новые операции HERE/GPS, routing, API endpoints и DB models/migrations не добавлены; изменения предыдущего local:* этапа сохранены.
+
+Габариты определены как текущие внешние габариты всего состава с грузом; currentGrossMassKilograms — текущая полная масса состава с грузом/топливом/людьми; totalAxleCount — все физически установленные оси, включая подъёмные, не только оси под нагрузкой. Эти внутренние определения не являются mapping в поля SDK. До mapping требуется сверка официальных определений провайдера, лицензии и native compatibility.
+
+Meters/Kilograms несовместимы в TypeScript; runtime принимает только положительные decimal strings, нормализует избыточные нули без Number/float/округления и сохраняет все значащие цифры. Счётчик осей — положительное safe integer. Нет придуманных физических/дорожных maxima или типовых defaults. Unknown/missing/null/числовые measurements/scientific notation/неизвестные поля и виды транспорта отклоняются. Unknown hazardousCargo не игнорируется. Успешная синтаксическая валидация не доказывает road legality, фактическую точность водительских данных или navigation readiness. Результат — frozen copy без aliasing/mutation input; errors содержат field/code без исходных значений.
+
+Фактически выполнены локально Windows / Node 24.19.0 / pnpm 10.28.2:
+
+- Новый package build, typecheck (включая compile-time запреты Meters/Kilograms/bare string), lint и 6 runtime tests — success.
+- pnpm install --frozen-lockfile — success. В pnpm-lock добавлен только packages/truck-profile: {}; новых внешних dependency resolutions нет.
+- Root pnpm lint, typecheck, build, test — success. Build включает Android/iOS JS bundles, не native binary build. Unit/component tests: 14 (6 profile + 1 navigation + 3 database config + 3 API + 1 mobile). Часть неизменившихся build/lint tasks использовала Turbo cache; новый package сгенерирован/проверен локально.
+- Локальный API/Metro/Android status после install/build — ready/booted; project Docker containers healthy. Стенд оставлен запущенным с прежним shell; профиль к UI пока не подключён.
+
+Не выполнялись в этой задаче: новое HTTP/database integration тестирование (backend не изменён), повторный native APK/iOS binary build или iOS runtime, GitHub CI/публикация, UI формы профиля, хранение/ownership/auth, migrations, US-unit conversions, выбор и SDK mapping иных vehicle types/осей, проверка реальных truck limits/permits/road legality. Нынешний контракт намеренно не считается route-ready. Тип состава и семантику полей нужно подтвердить до UI/storage integration; при иной потребности контракт будет расширен отдельно.
+
+Изменённые/добавленные файлы текущего этапа (13), отдельно от сохранённых local:* изменений:
+
+- packages/truck-profile/package.json
+- packages/truck-profile/tsconfig.json
+- packages/truck-profile/tsconfig.type-tests.json
+- packages/truck-profile/src/index.ts
+- packages/truck-profile/src/measurements.ts
+- packages/truck-profile/src/profile.ts
+- packages/truck-profile/test/measurements.test.cjs
+- packages/truck-profile/test/measurements.type-test.ts
+- packages/truck-profile/test/profile.test.cjs
+- packages/truck-profile/README.md
+- pnpm-lock.yaml
+- README.md
+- docs/audit.md
+
+Следующий отдельный шаг — форма ввода профиля на mobile с явными единицами. Перевод из US customary units требует отдельной точной реализации и проверки; хранение и авторизация не должны добавляться неявно вместе с формой. Реальные routing/GPS остаются вне этого этапа.
+
+## Уточнение: оба типа транспорта
+
+Пользователь подтвердил оба типа. Это заменяет первоначальное допущение выше: VehicleType теперь допускает rigid-truck (одиночный грузовик без прицепа) и tractor-semitrailer (тягач с одним полуприцепом). Парсер сохраняет выбранный тип. Общие габариты, текущая полная масса и число осей относятся ко всему автомобилю либо составу, включая груз; отдельные компоненты не моделируются.
+
+Изменены packages/truck-profile/src/profile.ts, src/index.ts, test/profile.test.cjs, добавлен test/vehicle-type.type-test.ts; обновлены packages/truck-profile/README.md, корневой README.md и этот docs/audit.md. Предыдущие локальные изменения сохранены.
+
+Фактически выполнены: package build, typecheck с compile-time проверками обоих допустимых и неизвестных типов, lint и 9 runtime tests — все успешно. Проверены сохранение типа и точности, JSON round-trip, неизменность input и обязательные поля обоих типов; неизвестные типы, включая car, отклоняются. git diff --check выполнен отдельно.
+
+В этом уточнении не запускались повторно root pipeline, HTTP/DB integration, native Android/iOS builds, emulator smoke или GitHub CI; зависимости, backend и mobile не изменены. UI, хранение, SDK mapping и реальные ограничения маршрутов не реализованы и не проверялись. Корректный формат профиля не доказывает дорожную допустимость. Следующий отдельный шаг — mobile форма выбора типа и ввода профиля с явными единицами.
+
+## Продолжение: mobile форма и логотип v1
+
+Добавлена форма профиля для обоих подтверждённых типов. Нет предварительно выбранного типа или подставленных размеров. Все поля обязательны: имя, общие габариты в m, текущая полная масса в kg и все физические оси. Decimal measurements передаются в общий parser строками без float-конвертации; оси принимают только целую десятичную запись и проверяются как positive safe integer. Формат успешно проверенного профиля сбрасывается при редактировании/смене типа. Данные только в памяти, не сохраняются. Routing, GPS, auth и backend не расширялись.
+
+Логотип создан встроенным image_gen: грузовик, дорога, зелёная стрелка. PNG скопирован в assets/brand, визуально просмотрен. Prompt и ограничения сохранены в assets/brand/README.md. Это концепт; native launcher icons не заменены, читаемость во всех размерах и товарные знаки не проверялись.
+
+Изменены/добавлены 11 файлов этого этапа:
+
+- apps/mobile/App.tsx
+- apps/mobile/package.json
+- apps/mobile/src/TruckProfileForm.tsx
+- apps/mobile/src/README.md
+- apps/mobile/__tests__/TruckProfileForm.test.tsx
+- pnpm-lock.yaml
+- assets/brand/truck-route-savings-logo-v1.png
+- assets/brand/README.md
+- packages/truck-profile/README.md
+- README.md
+- docs/audit.md
+
+Выполнены локально: mobile typecheck и lint, 3 component tests в 2 suites (shell и оба типа формы), Android/iOS production JS bundles, git diff --check. Typecheck сначала обнаружил potentially undefined индексы в новых тестах; исправлено и повторно пройдено. Offline install с обновлением lockfile прошёл; повторный frozen install упал в локальном type-is temporary directory. Force reinstall также не помог. Каталог node_modules/type-is перемещён с проверкой путей в ignored artifacts/dependency-repair, затем две последовательные установки --frozen-lockfile --offline прошли. Lockfile добавляет workspace связь mobile → truck-profile; новых внешних пакетов в lockfile нет. Component tests повторно пройдены после восстановления.
+
+Android shell smoke пройден на emulator-5554 с существующим debug APK и текущим JS из Metro. Screenshot начального экрана просмотрен: форма и оба выбора видны. ADB swipe и второй screenshot подтверждают доступность нижнего поля и Validate profile; нажатие пустой формы показало Choose a vehicle type в UI hierarchy. Evidence — ignored artifacts/profile-form/android. Это ограниченная device-проверка, не полный E2E успешного заполнения/клавиатуры/доступности. API/Metro ready, PostgreSQL и Redis healthy, видимый эмулятор оставлен запущенным.
+
+Не выполнены: повторный root pipeline, fresh-machine install без pnpm cache, native Android/iOS rebuild, iOS runtime, полное device E2E, keyboard/screen-reader/dark-mode/multiple-screen coverage, новые HTTP/DB integration, GitHub CI или публикация. Backend и native dependencies не менялись. Риски: SI-only ввод пока неудобен для американских водителей, данные теряются при перезапуске, валидация не проверяет физическую правдоподобность или дорожную допустимость. Следующий отдельный шаг — точные конвертации ft/in/lb с тестами до использования US-unit UI; хранение/ownership требует отдельной задачи.
+
+## Продолжение: точные US → SI conversions
+
+Добавлены feetToMeters, inchesToMeters и poundsToKilograms с положительным decimal-string вводом и branded SI результатом. BigInt умножает целочисленный coefficient, decimal scale сохраняется строками: без Number/parseFloat, округления и потери значащих цифр. Zero/negative/unknown/number/scientific/comma/fractions/mixed-unit inputs отклоняются. Коэффициенты international foot/inch и avoirdupois pound сверены с NIST Handbook 44 (2023), Appendix C, C-10/C-11/C-20/C-22; точная ссылка в README пакета. Survey foot, pound-force и troy pound не используются.
+
+Mobile форма предлагает m/kg, ft/lb и in/lb. Каждый режим имеет отдельный черновик всех полей в памяти; выбранный тип транспорта общий. Переключение восстанавливает соответствующий черновик, сбрасывает validation result и не переинтерпретирует число в других единицах. По умолчанию m/kg. Поддерживаются decimal feet или total inches; составной ft+in пока нет. Перед общим parser US значения конвертируются; при conversion error ввод не передаётся как SI. Успешная проверка показывает точные нормализованные SI значения. Новых зависимостей, SDK, endpoints, DB моделей или storage не добавлено.
+
+Файлы этого этапа (10):
+
+- packages/truck-profile/src/conversions.ts
+- packages/truck-profile/src/index.ts
+- packages/truck-profile/test/conversions.test.cjs
+- packages/truck-profile/test/conversions.type-test.ts
+- apps/mobile/src/TruckProfileForm.tsx
+- apps/mobile/__tests__/TruckProfileForm.test.tsx
+- packages/truck-profile/README.md
+- apps/mobile/src/README.md
+- README.md
+- docs/audit.md
+
+Фактически выполнены локально: package build/typecheck/lint и 12 runtime tests, mobile typecheck/lint и 7 component tests в 2 suites, Android/iOS production JS bundles, git diff --check — success. Type tests подтверждают выходные Meters/Kilograms и запрет смешивания. Runtime cases включают exact definitions, значения за пределами Number.MAX_SAFE_INTEGER, малые дроби, эквивалентность ft/in и отклонение неоднозначных форматов. Component tests покрывают оба типа × оба US режима, ожидаемые SI значения, восстановление черновика без переинтерпретации и ошибки mixed input/comma.
+
+Android shell smoke пройден на emulator-5554 с прежним debug APK и текущим Metro JS. Отдельный ADB сценарий заполнил rigid truck в ft/lb: синтетические 13.5/8.5/60 ft, 80000 lb, 5 осей. Проверены точные 4.1148/2.5908/18.288 m и 36287.3896 kg в UI hierarchy; screenshot просмотрен, результат виден. Это подтверждает выполнение новой арифметики в текущем Android runtime. Evidence и локальный сценарий — ignored artifacts/us-units/android. Первая попытка сценария началась до завершения запуска Activity и получила null UI root; после завершённого shell smoke повторный сценарий прошёл. Стенд оставлен работающим: API/Metro ready, PostgreSQL/Redis healthy, emulator booted.
+
+Не выполнялись: новая установка (dependencies/lockfile не менялись), root pipeline, native binary builds, iOS runtime, device проверка in/lb и semitrailer, screen-reader/dark-mode/другие устройства, полный device regression, новые HTTP/DB integration, GitHub CI/публикация. Риски: нет составного ft+in, обратных конвертаций или persistent drafts; все значения заявлены пользователем, формат и единицы не доказывают road legality. Следующий отдельный шаг — составной ввод feet + inches с точными конвертациями и проверками; storage/ownership остаются отдельной задачей.
+
+## Продолжение: отдельные поля feet + inches
+
+Добавлен feetAndInchesToMeters и тип CompoundLengthResult. Оба входа обязательны: строка целых неотрицательных футов и строка десятичных дюймов [0,12). Пустой компонент не заменяется нулём; пользователь явно вводит 0. Общая длина положительна. Двенадцать дюймов отклоняются без скрытого переноса; граница относится к форме записи единиц, не к ограничениям грузовых маршрутов. BigInt/decimal scale точно складывают компоненты и умножают на существующий коэффициент 0.0254; float и округления нет. Источник определения дюйма прежний, указан в README пакета.
+
+В mobile добавлен четвёртый режим ft+in/lb с отдельными полями футов/дюймов для трёх габаритов. Футы используют number-pad, дюймы decimal-pad. Масса остаётся в lb. Черновик нового режима, включая дюймы, восстанавливается при переключении; ошибки конвертации не переинтерпретируются как SI. Изменение любого компонента сбрасывает успешную проверку. Хранение, API, auth, routing/GPS, зависимости и native SDK не менялись.
+
+Файлы этого этапа (10): packages/truck-profile/src/conversions.ts, src/index.ts, test/conversions.test.cjs, test/conversions.type-test.ts; apps/mobile/src/TruckProfileForm.tsx, __tests__/TruckProfileForm.test.tsx; packages/truck-profile/README.md, apps/mobile/src/README.md, README.md, docs/audit.md. Ранее незакоммиченные изменения сохранены.
+
+Выполнены: package build/typecheck/lint и 14 runtime tests; mobile typecheck/lint и 9 component tests в 2 suites; Android/iOS production JS bundles; git diff --check — success. Покрыты нулевые компоненты при положительном итоге, оба нуля, отсутствующий/числовой/неоднозначный ввод, дробные футы в составной записи, 12 и более дюймов, малые дроби, большие значения без float и Meters type safety. Component tests проверяют оба типа транспорта, восстановление дюймов, точный результат и сброс успеха после редактирования.
+
+Android shell smoke пройден. Отдельный ADB сценарий заполнил rigid truck в ft+in/lb: 13 ft + 6 in, 8 ft + 6 in, 60 ft + 0 in, 80000 lb, 5 осей (синтетический ввод, не defaults/дорожные пределы). В UI hierarchy подтверждены точные 4.1148/2.5908/18.288 m и 36287.3896 kg; screenshot просмотрен, результат виден. Evidence и локальный сценарий — ignored artifacts/compound-units/android. Использован существующий debug APK с текущим JS из Metro; native binary заново не собирался. API/Metro ready, PostgreSQL/Redis healthy, видимый эмулятор оставлен запущенным.
+
+Не выполнялись: повторная установка (dependencies/lockfile неизменны), root pipeline, native Android/iOS builds, iOS runtime, device semitrailer/negative regression, screen-reader/dark-mode/другие экраны, новые HTTP/DB integration, GitHub CI/публикация. Риски: нет persistent drafts или обратной конвертации; slash fractions и свободная текстовая запись с единицами не поддерживаются; проверяется формат, не физическая правдоподобность/road legality. Следующий отдельный шаг — локальное сохранение проверенного профиля с версией данных, восстановлением и явным удалением; backend ownership/auth остаются отдельной задачей.
+
+## Продолжение: локальный SI snapshot через storage interface/adapter
+
+Добавлены TruckProfileStore, KeyValueStorage и JsonTruckProfileStore; внешняя библиотека изолирована в AsyncStorageProfileStore. Вручную сохраняется один валидированный профиль обоих типов в envelope storageVersion 1 + profile schemaVersion 1, с точными SI decimal strings. Save повторно валидирует ввод и явно заменяет снимок, Restore проверяет JSON/envelope/profile и возвращает нормализованный m/kg draft и vehicleType, Delete удаляет только свой ключ, оставляя текущую форму. Нет autosave, auto-restore, автоматического удаления испорченных данных, backend/auth/sync или сохранения незавершённых US drafts. Неизвестная версия envelope даёт unsupported-version; плохой JSON/schema/unknown fields — invalid-data; I/O errors и отсутствие native module — unavailable, без исходных значений/exception detail в UI. Никакого in-memory fallback, выдаваемого за сохранение, нет.
+
+UI Save недоступен до проверки; редактирование снимает validation. Pending guard сериализует кнопки, поля/режим/тип/валидация заблокированы на время I/O; запоздалый ответ после unmount не изменяет UI. Restore заменяет только m/kg draft; другие unit drafts сохраняются в памяти. Успех операции появляется после await. Локальное storage незашифрованное; секреты/токены/GPS в него не помещаются, ownership не имитируется.
+
+До установки проверены официальные docs AsyncStorage 3.1, npm metadata и исходники API/podspec/Gradle: RN iOS/Android >=0.76, Kotlin >=2.1.0, min SDK 24, iOS >=13, MIT. Проект RN 0.84.0 / Kotlin 2.1.20 / SDK 24 соответствует заявленным минимумам. Закреплена версия 3.1.1; createAsyncStorage/getItem/setItem/removeItem сверены с установленными types и документацией (ссылка в storage README). Добавлены npm package и idb dependency в pnpm-lock.
+
+Файлы текущего этапа (22), отдельно от сохранённых предыдущих изменений:
+
+- apps/mobile/src/storage/TruckProfileStore.ts
+- apps/mobile/src/storage/AsyncStorageProfileStore.ts
+- apps/mobile/src/storage/README.md
+- apps/mobile/src/ProfilePersistence.tsx
+- apps/mobile/src/TruckProfileForm.tsx
+- apps/mobile/App.tsx
+- apps/mobile/__tests__/TruckProfileStore.test.ts
+- apps/mobile/__tests__/AsyncStorageProfileStore.test.ts
+- apps/mobile/__tests__/ProfilePersistence.test.tsx
+- apps/mobile/__tests__/TruckProfileForm.test.tsx
+- apps/mobile/package.json
+- pnpm-lock.yaml
+- apps/mobile/android/gradle/dependency-locks/app.lockfile
+- apps/mobile/android/gradle/dependency-locks/react-native-async-storage_async-storage.lockfile
+- apps/mobile/ios/Podfile.lock
+- scripts/local.cjs
+- .github/workflows/ci.yml
+- README.md
+- apps/mobile/README.md
+- apps/mobile/src/README.md
+- packages/truck-profile/README.md
+- docs/audit.md
+
+local:up теперь компилирует truck-profile перед Metro. Android/iOS CI jobs также собирают navigation и truck-profile; двухфильтровая pnpm build команда проверена локально. CI deployment lock enforcement/assertions не ослаблены. Реальный полный local:down/up cycle этого изменения не повторялся; status проверен, 18 script tests прошли (включая 6 local helper tests).
+
+Фактически выполнены:
+
+- Install с новым native package; первый pnpm запуск упал в express/node_modules/type-is temporary directory. Два конкретных локальных type-is каталога перемещены в ignored artifacts/storage-review после проверки абсолютных путей, затем frozen install прошёл; последующий --frozen-lockfile --offline также success. В ASCII native build checkout сначала обнаружен устаревший apps/api/package.json относительно lockfile; package manifest синхронизирован, frozen install success. Секреты/.env в build checkout не копировались.
+- Mobile typecheck/lint и 18 tests в 5 suites — success. Покрыты оба типа профиля, точный round-trip через новый store instance, запрет invalid writes, сохранение повреждённых/неизвестных данных, IO failures, один storage key, восстановление формы, Save после validation, serial requests и UI lock. Native adapter unit test использует mock; сам по себе не подтверждает дисковую запись. Первоначальный dynamic import не работал в Jest harness: заменён на lazy require без eager native dependency; последующие проверки прошли. Небольшие ошибки типов test mocks исправлены до финального прогона.
+- Android/iOS production JS bundles — success; navigation/truck-profile build — success; git diff --check — success.
+- Android resolveDependencyLocks --write-locks — success, 5m32s. Затем resolveDependencyLocks + assembleDebug x86_64 БЕЗ --write-locks — success, 3m50s, 123 tasks (89 executed/34 up-to-date). App lock обновлён, добавлен library lock; buildscript/safe-area locks семантически не изменены. Копии lockfiles после обычной native сборки совпали с workspace. В логе остаются предупреждения SDK XML schema и Gradle 10 deprecations; текущую сборку Gradle 9 они не остановили. Missing-lock negative check в этом этапе повторно не запускался.
+- Новый APK установлен поверх прежнего, Android shell smoke прошёл на emulator-5554/API35 x86_64. ADB сценарий заполнил синтетический rigid truck в ft+in/lb, валидировал, сохранил, выполнил force-stop/start, восстановил точные SI значения, удалил запись, снова force-stop/start и проверил No saved profile on this device. Сохранение/восстановление SI и отсутствие после удаления подтверждены UI hierarchy; выбранный vehicleType отдельно проверен component/store tests, не device assertion; restored.png/deleted.png просмотрены. Evidence и локальный сценарий — ignored artifacts/profile-storage/android. Тестовая запись удалена; текущий экран показывает отсутствие снимка. Это проверка restart процесса, не reboot/uninstall/reinstall.
+- API/Metro ready, PostgreSQL/Redis healthy, emulator booted; стенд оставлен запущенным, local config указывает на пересобранный APK.
+
+iOS Podfile.lock подготовлен как metadata update внешнего pod AsyncStorage 3.1.1, а НЕ результат выполненного pod install. Podspec вычислен CocoaPods 1.15.2 в Ruby container с установленными RN 0.84 helpers и существующим new-architecture/prebuilt dependency context. Нормализованная JSON checksum контрольного safe-area pod совпала с прежним lock (9e2124f6042abcc1d033faf91a56fe05a9c6e0c4); AsyncStorage metadata checksum b1af8208aba0429d02dd74d24f1d07f14df49d1c. Все новые pod dependencies уже присутствуют в прежнем resolved graph; добавлены только external pod/version/path/checksum. Это metadata sanity check, не Xcode/CocoaPods integration validation. На macOS обязательны bundle exec pod install --deployment, build и runtime test; iOS storage integration до этого НЕ подтверждена.
+
+Не выполнялись: полный root pipeline и новые HTTP/DB integration (backend не менялся), macOS pod install/native iOS build/runtime, Android arm64/physical devices/release, reboot/uninstall/backup/restore, полный accessibility/dark-mode/экранный regression, device semitrailer/отказы диска/повреждение данных, повторный missing-lock negative check, GitHub CI/публикация. Риски: iOS native metadata ещё требует проверки на macOS; сохранён один незашифрованный локальный снимок, без secure erase/backup гарантий, миграций или аккаунтов. Следующий шаг — macOS iOS deployment install/build/runtime validation новой native зависимости; backend ownership/auth остаются отдельной задачей.
+
+## Продолжение: iOS native validation
+
+Перед изменениями сверены Git status, main HEAD/remote (90c3250), текущие UI labels, XCTest target/scheme, iOS runner и Podfile.lock. По ранее данному разрешению пользователя подготовлена публикация накопленных локальных исходников в noname33-cmd/123 и общий CI; секреты/.env, APK, SDK/tools, node_modules и artifacts исключены.
+
+Изменены apps/mobile/ios/TruckRouteSavingsUITests/FoundationSmokeTests.swift, apps/mobile/App.tsx, apps/mobile/README.md, docs/audit.md. В существующий тестовый класс добавлен настоящий UI сценарий save/restart/restore/delete/restart/empty и screenshot восстановленного профиля. Перед записью проверяется отсутствие чужого snapshot; существующая запись не перезаписывается. Проверяются точные SI строки. Клавиатура скрывается при прокрутке (on-drag), тест прокручивает форму через координаты выше numeric keyboard. Shell assertions, deployment lock enforcement и выбор отдельного Simulator сохранены. На Windows Swift/Xcode тест не выполнялся; результаты CI фиксируются далее после выполнения.

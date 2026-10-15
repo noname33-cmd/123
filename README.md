@@ -7,6 +7,8 @@
 - `apps/api`: NestJS, `GET /health` — liveness процесса, не readiness PostgreSQL/Redis.
 - `apps/mobile`: React Native 0.84.0, TypeScript, native Android/iOS; отображает недоступность navigation.
 - `packages/navigation`: интерфейс capability и UnavailableNavigationEngine; нет выдуманных методов HERE.
+- `packages/truck-profile`: контракт профиля обоих типов, точные SI decimal strings, валидация и конвертации ft/in/lb в m/kg. Mobile форма поддерживает четыре режима единиц и явное локальное Save/Restore/Delete одного проверенного SI профиля через интерфейс/адаптер AsyncStorage; описание в `apps/mobile/src/README.md` и `apps/mobile/src/storage/README.md`. SDK mapping отсутствует.
+- `assets/brand`: концепт логотипа v1 — грузовик, дорога и зелёная стрелка; PNG и prompt. Native app icons пока не заменены.
 - `packages/database`: DatabaseConnection port, Prisma 7.10.0 / PostgreSQL adapter, проверка PostGIS при старте API. Бизнес-моделей и migrations пока нет.
 - `infra`: локальные PostgreSQL 17/PostGIS 3.5 и Redis 7.4.
 - `docs/audit.md`: исходное состояние, результаты и ограничения проверок.
@@ -41,6 +43,37 @@ pnpm --filter @truck/api start
 ```
 
 API слушает loopback, порт задаётся `PORT`. Перед прослушиванием API обязательно подключается к PostgreSQL и выполняет SELECT PostGIS_Lib_Version(). Ошибка конфигурации/пароля/доступности/отсутствие PostGIS останавливает startup; fallback отсутствует. Shutdown hooks закрывают Prisma pool. Единственный endpoint — process liveness; после старта `/health` не проверяет доступность DB, бизнес-endpoints отсутствуют.
+
+## Локальный стенд одной командой (Windows)
+
+После установки зависимостей настройте `artifacts/local-run/config.json` — файл игнорируется Git. Нужны уже установленные Android SDK/AVD, Docker с локальным Linux engine и собранный **debug APK**. Новые SDK, licenses и native build эти команды не устанавливают и не выполняют.
+
+```json
+{
+  "androidSdk": "C:/path/to/android-sdk",
+  "avdHome": "C:/path/to/avd",
+  "avd": "TruckFoundationApi35",
+  "apk": "C:/path/to/app-debug.apk"
+}
+```
+
+Все пути должны быть абсолютными и существовать. В `avdHome` должны находиться выбранные AVD и его `.ini`. Имя AVD можно получить через `emulator -list-avds` при соответствующем `ANDROID_AVD_HOME`. APK должен принадлежать `com.truckroutesavings` и содержать x86_64 libraries для текущего smoke AVD. Native build и ограничения коротких ASCII-путей описаны ниже; после native changes пересоберите APK отдельно. JavaScript берётся из текущего checkout через Metro.
+
+```powershell
+pnpm local:up
+pnpm local:status
+pnpm local:down
+```
+
+Используйте pnpm 10.28.2. Если глобальный pnpm shim выбирает другую версию, те же команды доступны напрямую: `node scripts/local.cjs up`, `node scripts/local.cjs status`, `node scripts/local.cjs down`. Внутренняя сборка вызывает уже установленные Prisma/TypeScript напрямую и не запускает package installation.
+
+`local:up` запускает project PostgreSQL/PostGIS и Redis, проверяет их, генерирует Prisma Client и собирает database/API/navigation, запускает API и Metro в фоне, прогревает Android JS bundles, **открывает окно эмулятора**, устанавливает указанный APK и выполняет Android UI smoke. Закройте окно эмулятора через `local:down`, чтобы остановить весь стенд. Повторный up готового управляемого стенда показывает status; частично запущенный стенд требует down/up. Для команд start/stop используется lock; status доступен во время запуска.
+
+`.env` читается явно. Если его нет и PostgreSQL volume ещё не существует, up создаёт случайный локальный пароль и DATABASE_URL. При существующем volume без `.env` команда требует восстановить прежний пароль; volume автоматически не сбрасывается. Допустима только соответствующая Compose БД на `127.0.0.1:5432`, user `truck`, database `truck_route_savings`, без URL query/hash. Docker Compose project закреплён как `truck-route-savings`; переменная чужого COMPOSE_PROJECT_NAME его не меняет. Текущий Docker context должен указывать на локальный engine.
+
+Занятые порты API/Metro/emulator не освобождаются автоматически. Команда не присваивает себе запущенные вручную процессы. State хранит PID, время создания, executable и command line; down перепроверяет все поля перед остановкой, чтобы не завершить процесс с повторно использованным PID. `local:down` останавливает services этого Compose project без удаления volumes; чужие Docker projects не затрагиваются. При ошибке up откатывает свои новые процессы и вновь запущенные services, сохраняя ранее работавшую инфраструктуру.
+
+Состояние, машинные пути, PID и логи — в `artifacts/local-run/`; UI evidence — в `android-smoke/`. Эти файлы и `.env` не коммитятся. После принудительного прерывания CLI lock/state могут остаться: сначала проверьте процессы и логи, затем адресно устраните stale lock; не удаляйте работающий state ради повторного запуска. Не запускайте concurrent up/down. Требуется доступ Windows CIM к своим процессам. Остановка Node здесь предназначена для local dev и может прервать запросы; graceful production shutdown этим helper не проверяется. macOS/Linux используют прежние ручные команды README, автоматизация local:* для них пока не реализована.
 
 ## Инфраструктура
 
@@ -142,7 +175,7 @@ pnpm --filter @truck/mobile ios
 
 HERE Navigate не установлен. До интеграции нужно подтвердить лицензию, native SDK/React Native bridge compatibility и официальные truck routing API. Заглушка сообщает недоступность, не строит car routes и не симулирует navigation. Полный контракт routing будет отдельным проверенным решением.
 
-Денежные и truck measurement модели сейчас отсутствуют. При их добавлении: USD minor units в целых значениях/decimal, никогда float; distance в метрах, mass в килограммах, dimensions в метрах, conversions на границе UI с явными единицами. Ограничения маршрутов не задавать без данных провайдера.
+Контракт `packages/truck-profile` хранит габариты в метрах и текущую массу в килограммах как точные branded decimal strings; JS float на границе не принимается. Поля относятся ко всему одиночному грузовику или составу с полуприцепом, включая груз. Это проверка формата заявленного профиля, а не дорожных ограничений или возможности navigation. Подробная семантика и невыполненные интеграции — в README пакета. Денежные модели отсутствуют: будущие USD minor units — в целых значениях/decimal, никогда float; conversions — на границе UI с явными единицами. Ограничения маршрутов не задавать без данных провайдера.
 
 ## Официальные источники
 

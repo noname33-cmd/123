@@ -50,7 +50,7 @@ jobs:
           packages: platform-tools
       - run: sdkmanager 'emulator' 'platforms;android-36' 'build-tools;36.0.0' 'build-tools;35.0.0' 'ndk;27.1.12297006' 'cmake;3.22.1'
       - run: pnpm install --frozen-lockfile
-      - run: pnpm --filter @truck/navigation build
+      - run: pnpm --filter @truck/navigation --filter @truck/truck-profile build
       - name: Create local debug key
         run: |
           mkdir -p "$HOME/.android"
@@ -119,7 +119,7 @@ jobs:
           node-version: '22.22.0'
           cache: pnpm
       - run: pnpm install --frozen-lockfile
-      - run: pnpm --filter @truck/navigation build
+      - run: pnpm --filter @truck/navigation --filter @truck/truck-profile build
       - uses: ruby/setup-ruby@v1
         with:
           ruby-version: '3.3.12'
