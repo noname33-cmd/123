@@ -1,4 +1,5 @@
 node_modules/
+packages/database/src/generated/
 .turbo/
 dist/
 coverage/

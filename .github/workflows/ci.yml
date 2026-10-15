@@ -21,6 +21,7 @@ jobs:
       - run: pnpm test
       - run: pnpm test:e2e
       - run: pnpm test:scripts
+      - run: pnpm test:database
       - name: Start infrastructure
         env:
           POSTGRES_PASSWORD: ci-local-ephemeral

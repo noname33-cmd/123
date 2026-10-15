@@ -268,3 +268,46 @@ Evidence ZIP digests сверены: android-smoke-evidence artifact 11952611745
 - docs/audit.md
 
 Итоговая правка только документации публикуется с [skip ci]. Исходники соответствуют проверенному commit выше; git diff --check прошёл.
+
+## Продолжение: Prisma/PostgreSQL connection foundation
+
+Добавлен packages/database: DatabaseConnection port, PrismaDatabaseConnection adapter, CommonJS generated Prisma Client 7.10.0. Prisma CLI/Client/adapter-pg закреплены; Node минимум повышен до 22.12 по требованиям Prisma 7. Prisma latest указывал на 8 RC, поэтому выбрана проверенная stable 7.10.0. Схема без business models; generate/build не требуют URL. Generated source исключён из Git и включён в Turbo outputs. Отдельная зависимость build перед database typecheck предотвращает конкурентную генерацию. Dev-only react-dom 19.2.3 закрывает Prisma Studio peer и совпадает с текущим React.
+
+Nest DatabaseModule создаёт один adapter через DI token, подключается и проверяет PostGIS на startup, закрывает pool на shutdown. DATABASE_URL обязателен, валидация требует PostgreSQL protocol/host/database/user/password. Нет fallback или runtime test mode. Ошибки конфигурации/startup не повторяют credentials. /health сохраняет смысл process liveness; постоянный DB readiness пока не реализован. Pool max 5, connection/statement timeout 5000 ms, idle timeout 10000 ms. SSL options передаются драйверу, проверка сертификатов не отключается.
+
+Добавлен test:database: выделенный контейнер закреплённого PostGIS image, случайный пароль и loopback port, анонимный volume; finally удаляет только контейнер текущего запуска и его volume. Developer DATABASE_URL, Compose volumes и фиксированные host ports не используются. Реальные integration tests проверяют Nest startup, SELECT PostGIS_Lib_Version(), shutdown hook и неверный пароль с точной sanitized error. Дополнительный smoke запускает скомпилированный bootstrap с generated Prisma Client, выполняет HTTP /health и закрывает app; отдельный compiled main без DATABASE_URL завершается с кодом 1. CI checks включает эту команду.
+
+Промежуточные ошибки найдены и исправлены до публикации: TS weak-type несовместимость ProcessEnv; относительный ts-jest tsconfig при запуске из root. Оба реальных integration tests затем прошли, временные контейнеры удалены. Локально Windows/Node 24.19 прошли frozen install, lint, typecheck, build, unit/component (8 tests), HTTP (2), scripts (11), real database integration (2) и compiled smoke (успешный запуск + missing config). Итого 23 test assertions/cases в test runners плюс compiled smoke; не считать их business E2E. Некоторые неизменившиеся задачи использовали Turbo cache; чистый CI проверяется отдельно, результат ниже будет добавлен после выполнения.
+
+Не добавлены/не проверены: business models/migrations, spatial ORM mapping, Redis/BullMQ backend adapter, production TLS/auth/pooling/load/recovery behaviour, readiness после разрыва соединения, physical devices/release signing, HERE/GPS. При принудительном завершении test harness finally может не выполниться; проверяйте адресно оставшиеся truck-db-integration-* контейнеры. Следующий отдельный шаг — согласование первого domain contract и migrations с явными единицами измерения и денежными типами.
+
+Изменённые/добавленные файлы этой задачи:
+
+- .github/workflows/ci.yml
+- .gitignore
+- README.md
+- apps/api/README.md
+- apps/api/jest.config.cjs
+- apps/api/package.json
+- apps/api/src/app.module.ts
+- apps/api/src/database.module.ts
+- apps/api/test/database.unit.spec.ts
+- apps/api/test/database.integration.spec.ts
+- apps/api/test/health.e2e.spec.ts
+- packages/database/README.md
+- packages/database/package.json
+- packages/database/prisma.config.ts
+- packages/database/prisma/schema.prisma
+- packages/database/src/connection.ts
+- packages/database/src/index.ts
+- packages/database/src/prisma-database-connection.ts
+- packages/database/test/config.unit.test.cjs
+- packages/database/tsconfig.json
+- scripts/verify-api-database.cjs
+- scripts/verify-database.cjs
+- scripts/verify-database.test.cjs
+- package.json
+- pnpm-lock.yaml
+- pnpm-workspace.yaml
+- turbo.json
+- docs/audit.md

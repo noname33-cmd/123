@@ -2,5 +2,7 @@ packages:
   - apps/*
   - packages/*
 onlyBuiltDependencies:
+  - '@prisma/engines'
+  - prisma
   - '@nestjs/core'
   - unrs-resolver

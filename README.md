@@ -7,15 +7,16 @@
 - `apps/api`: NestJS, `GET /health` — liveness процесса, не readiness PostgreSQL/Redis.
 - `apps/mobile`: React Native 0.84.0, TypeScript, native Android/iOS; отображает недоступность navigation.
 - `packages/navigation`: интерфейс capability и UnavailableNavigationEngine; нет выдуманных методов HERE.
+- `packages/database`: DatabaseConnection port, Prisma 7.10.0 / PostgreSQL adapter, проверка PostGIS при старте API. Бизнес-моделей и migrations пока нет.
 - `infra`: локальные PostgreSQL 17/PostGIS 3.5 и Redis 7.4.
 - `docs/audit.md`: исходное состояние, результаты и ограничения проверок.
 - `.github/workflows/ci.yml`: JS, HTTP, infrastructure и native build jobs.
 
-Следующие отдельные модули: `apps/admin` (Next.js), `packages/database` (Prisma/PostGIS migrations), Redis/BullMQ adapters. Пока они не создаются и не используются. Все внешние сервисы будут подключаться через интерфейсы и адаптеры.
+Следующие отдельные модули: `apps/admin` (Next.js), domain-specific Prisma/PostGIS migrations, Redis/BullMQ adapters. Все внешние сервисы подключаются через интерфейсы и адаптеры.
 
 ## Установка и JS-проверки
 
-Требуются Node >=22.11 <25 (CI: 22.22.0), pnpm **10.28.2**, Docker Compose v2 для инфраструктуры. Установите указанную версию pnpm доступным для вашей среды способом. В стандартной Node-installation: `npm install -g pnpm@10.28.2`.
+Требуются Node >=22.12 <25 (CI: 22.22.0), pnpm **10.28.2**, Docker Compose v2 для инфраструктуры. Минимум Node поднят по требованиям Prisma 7. Установите указанную версию pnpm доступным для вашей среды способом. В стандартной Node-installation: `npm install -g pnpm@10.28.2`.
 
 ```sh
 pnpm install --frozen-lockfile
@@ -25,18 +26,21 @@ pnpm build
 pnpm test
 pnpm test:e2e
 pnpm test:scripts
+pnpm test:database # Docker: отдельный временный PostGIS, реальный Nest/Prisma и неверный пароль
 ```
 
-`pnpm build` компилирует backend/navigation и создаёт Android/iOS **JS bundles** в `apps/mobile/dist`. Это не APK и не iOS binary. `pnpm test` запускает unit/component tests; `test:e2e` проверяет настоящий HTTP Nest application через Supertest, а не взаимодействие с мобильным устройством.
+`pnpm build` генерирует Prisma Client, компилирует database/backend/navigation и создаёт Android/iOS **JS bundles** в `apps/mobile/dist`. DATABASE_URL не требуется для генерации, сборки и unit tests. Это не APK и не iOS binary. `pnpm test` запускает unit/component tests; `test:e2e` проверяет HTTP Nest application через Supertest с явной test-only подменой DatabaseConnection. Настоящий PostgreSQL проверяется отдельно через `test:database`.
 
 ```sh
+# Сначала запустите инфраструктуру и задайте DATABASE_URL по инструкции ниже.
+pnpm --filter @truck/database build
 pnpm dev:api
 # другой терминал: GET http://127.0.0.1:3000/health
 pnpm --filter @truck/api start
 # start используется после build; не запускайте одновременно на том же порту
 ```
 
-API слушает loopback, порт задаётся `PORT`. Единственный публичный endpoint — liveness, бизнес-endpoints отсутствуют.
+API слушает loopback, порт задаётся `PORT`. Перед прослушиванием API обязательно подключается к PostgreSQL и выполняет SELECT PostGIS_Lib_Version(). Ошибка конфигурации/пароля/доступности/отсутствие PostGIS останавливает startup; fallback отсутствует. Shutdown hooks закрывают Prisma pool. Единственный endpoint — process liveness; после старта `/health` не проверяет доступность DB, бизнес-endpoints отсутствуют.
 
 ## Инфраструктура
 
@@ -47,10 +51,15 @@ $env:POSTGRES_PASSWORD = [guid]::NewGuid().ToString('N')
 pnpm infra:check
 pnpm infra:up
 pnpm test:infra
-pnpm infra:down
+$env:DATABASE_URL = 'postgresql://truck:' + [uri]::EscapeDataString($env:POSTGRES_PASSWORD) + '@127.0.0.1:5432/truck_route_savings'
+pnpm --filter @truck/database build
+pnpm dev:api
+# После остановки API: pnpm infra:down
 ```
 
-POSIX shell: `export POSTGRES_PASSWORD="$(openssl rand -hex 24)"`, затем те же команды. Compose публикует порты только на 127.0.0.1. Redis без auth предназначен только для локальной разработки. Volumes сохраняются при `infra:down`; существующий PostgreSQL volume сохраняет первоначальный пароль. Backend пока не подключается к этим сервисам.
+POSIX shell: `export POSTGRES_PASSWORD="$(openssl rand -hex 24)"`, затем `pnpm infra:up` и `export DATABASE_URL="postgresql://truck:${POSTGRES_PASSWORD}@127.0.0.1:5432/truck_route_savings"` (hex-пароль не требует URL encoding). Затем build database и `pnpm dev:api`. Конфигурация читается из process environment; `.env` автоматически не загружается. Compose публикует порты только на 127.0.0.1. Redis без auth предназначен только для локальной разработки, backend пока к Redis не подключён. Volumes сохраняются при `infra:down`; существующий PostgreSQL volume сохраняет первоначальный пароль — используйте его прежнее значение. Не удаляйте volume ради смены пароля.
+
+`pnpm test:database` не использует DATABASE_URL разработчика, Compose volumes или фиксированный host port: создаёт контейнер с закреплённым digest PostGIS, случайным паролем, анонимным volume и случайным портом только на 127.0.0.1. В finally удаляет только свой контейнер и volume. Проверяются реальный Nest startup/query/shutdown и отказ при неверном пароле. Принудительное завершение Node/хоста может прервать finally; оставшийся контейнер с префиксом `truck-db-integration-` следует проверять и удалять адресно. Команда требует Docker и доступа к image registry; миграций и изменений developer DB не выполняет.
 
 `test:infra` требует запущенных контейнеров: проверяет соединение PostgreSQL с паролем по TCP, PostGIS geography distance в метрах и Redis PING/write/read. Redis probe использует уникальный ключ с TTL и удаляет его после проверки. Docker images закреплены digest; PostgreSQL healthcheck ждёт готовности TCP. `test:scripts` проверяет обработку ошибок smoke-команды.
 
@@ -174,4 +183,4 @@ bash gradlew resolveDependencyLocks --write-locks -PreactNativeArchitectures=x86
 
 Отдельные границы: settings/plugin-management classpaths, included builds RN Gradle plugin и buildscript classpaths сторонних библиотек не покрыты этими project lockfiles. Их исходные версии закреплены pnpm-lock; отдельный locking этих build contexts и проверка Maven artifact checksums остаются будущими задачами. Release graph resolution не означает выполненную release binary/signing проверку.
 
-[Официальная документация Gradle locking](https://docs.gradle.org/current/userguide/dependency_locking.html); используемые методы ResolutionResult и UnresolvedDependencyResult сверены с установленным Gradle 9.0.0. Локально resolveDependencyLocks + assembleDebug x86_64 прошли без --write-locks (88 tasks, 2m29s). Missing app state и missing root buildscript lock отвергнуты отдельными negative checks; все три lockfile не изменились. [Чистый CI](https://github.com/noname33-cmd/123/actions/runs/38691647263) на commit ac50fb210d1a5567ac2e4014c866baadf07e9eca прошёл полностью: checks, android, ios. Подтверждены frozen install, lint, typecheck, JS/native builds, 14 JS tests, PostGIS/Redis, Android strict-lock checks и device smoke, 1 iOS XCTest без ошибок. Lockfiles после сборки не изменились. Следующий отдельный шаг — подключить Prisma к PostgreSQL в backend с integration test; дополнительные build contexts и Maven checksum verification остаются отдельными границами текущего locking.
+[Официальная д…599 tokens truncated…npm test:database` из корня поднимает отдельный одноразовый PostGIS и выполняет integration suite с настоящим adapter, PostGIS query, shutdown и неверным паролем. Dev использует TypeScript compiler с decorator metadata, совпадающим с production build. Моделей, миграций, routing и GPS нет.

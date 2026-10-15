@@ -2,11 +2,15 @@ import {INestApplication} from '@nestjs/common';
 import {Test} from '@nestjs/testing';
 import request from 'supertest';
 import {AppModule} from '../src/app.module';
+import {DATABASE_CONNECTION} from '../src/database.module';
 
 describe('HTTP application', () => {
   let app: INestApplication;
   beforeAll(async () => {
-    const module = await Test.createTestingModule({imports: [AppModule]}).compile();
+    const module = await Test.createTestingModule({imports: [AppModule]})
+      .overrideProvider(DATABASE_CONNECTION)
+      .useValue({connect: jest.fn().mockResolvedValue(undefined), disconnect: jest.fn().mockResolvedValue(undefined)})
+      .compile();
     app = module.createNestApplication();
     await app.init();
   });
