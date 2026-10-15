@@ -200,6 +200,8 @@ Artifacts: android-debug-x86_64, android-smoke-evidence (ZIP SHA-256 3127f141cd6
 
 ## Продолжение: iOS launch/UI smoke
 
-Добавлен реальный UI-test target TruckRouteSavingsUITests вместо ссылки scheme на отсутствующий TruckRouteSavingsTests. Один XCTest запускает приложение, ожидает три текста shell, проверяет isHittable и runningForeground, сохраняет screenshot/hierarchy в xcresult. Добавлена команда test:ios, явный simulator UUID, отказ для неподходящих/недоступных устройств. CI использует отдельный Simulator, встраивает JS bundle без Metro и сохраняет evidence.
+Добавлен реальный UI-test target TruckRouteSavingsUITests вместо ссылки scheme на отсутствующий TruckRouteSavingsTests. Один XCTest запускает приложение, ожидает три текста shell, проверяет ненулевые рамки текста внутри app frame, отсутствие alerts и runningForeground, сохраняет screenshot/hierarchy в xcresult. Добавлена команда test:ios, явный simulator UUID, отказ для неподходящих/недоступных устройств. CI использует отдельный Simulator, встраивает JS bundle без Metro и сохраняет evidence.
 
 Локально: 9 script tests (6 существующих + 3 новых) и lint scripts прошли; git diff --check успешен. Swift compile, XCTest и iOS runtime пока не выполнены для этой итерации, ожидается macOS CI. Новые product modules и SDK не добавлены.
+
+Промежуточные проверки: первый native test build выявил пустой PRODUCT_NAME у UI-test target — исправлено для Debug/Release. Второй run скомпилировал и выполнил 1 XCTest: заголовок существовал, но isHittable=false. Запись экрана извлечена из сохранённого xcresult, визуально подтверждены все три текста без обрезки. Для статического текста проверка заменена на ненулевую рамку внутри экрана; проверка foreground и отсутствие alerts сохранены. Attachments перенесены в XCTest tearDownWithError для сохранения при assertion failure; добавлен экспорт через xcresulttool. Исправлен оставшийся template CFBundleDisplayName. Новый результат пока ожидается.

@@ -45,6 +45,12 @@ function verifyIOS(config) {
     cwd: config.ios, stdio: 'inherit', timeout: 1200000,
     env: {...process.env, FORCE_BUNDLING: '1', RCT_NO_LAUNCH_PACKAGER: '1'},
   });
+  if (fs.existsSync(result)) {
+    const exported = spawnSync('xcrun', ['xcresulttool', 'export', 'attachments',
+      '--path', result, '--output-path', path.join(config.artifacts, `attachments-${path.basename(result)}`)],
+    {stdio: 'inherit', timeout: 120000});
+    if (exported.error || exported.status !== 0) {console.error('Attachment export failed; retain the original xcresult');}
+  }
   if (r.error || r.status !== 0) {throw new Error(`iOS XCTest failed: ${r.error?.message ?? r.status}; evidence: ${result}`);}
   console.log(`iOS shell XCTest passed on ${config.udid}; evidence: ${result}`);
 }
