@@ -88,8 +88,10 @@ jobs:
           if-no-files-found: warn
   ios:
     runs-on: macos-15
+    timeout-minutes: 30
     env:
       BUNDLE_FROZEN: 'true'
+      DEVELOPER_DIR: /Applications/Xcode_16.4.app/Contents/Developer
     steps:
       - uses: actions/checkout@v4
       - uses: pnpm/action-setup@v4
@@ -111,6 +113,20 @@ jobs:
         run: |
           set -o pipefail
           xcodebuild -workspace TruckRouteSavings.xcworkspace -scheme TruckRouteSavings -configuration Debug -sdk iphonesimulator -destination 'generic/platform=iOS Simulator' CODE_SIGNING_ALLOWED=NO build 2>&1 | tee xcodebuild.log
+      - name: Create isolated iOS simulator
+        run: |
+          UDID=$(xcrun simctl create TruckFoundationSmoke com.apple.CoreSimulator.SimDeviceType.iPhone-16 com.apple.CoreSimulator.SimRuntime.iOS-18-5)
+          echo "IOS_SIMULATOR_UDID=$UDID" >> "$GITHUB_ENV"
+      - name: iOS launch and UI smoke
+        run: |
+          set -o pipefail
+          mkdir -p artifacts/ios-smoke
+          pnpm test:ios 2>&1 | tee artifacts/ios-smoke/xctest.log
+      - if: always() && env.IOS_SIMULATOR_UDID != ''
+        name: Remove CI simulator
+        run: |
+          xcrun simctl shutdown "$IOS_SIMULATOR_UDID" || true
+          xcrun simctl delete "$IOS_SIMULATOR_UDID"
       - if: always()
         uses: actions/upload-artifact@v4
         with:
@@ -118,4 +134,5 @@ jobs:
           path: |
             apps/mobile/ios/Podfile.lock
             apps/mobile/ios/xcodebuild.log
+            artifacts/ios-smoke/
           if-no-files-found: warn

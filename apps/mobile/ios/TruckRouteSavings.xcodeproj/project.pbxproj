@@ -9,9 +9,21 @@
 /* Begin PBXBuildFile section */
 		0C80B921A6F3F58F76C31292 /* libPods-TruckRouteSavings.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 5DCACB8F33CDC322A6C60F78 /* libPods-TruckRouteSavings.a */; };
 		13B07FBF1A68108700A75B9A /* Images.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 13B07FB51A68108700A75B9A /* Images.xcassets */; };
+		38D6D73198703242AF1E9645 /* FoundationSmokeTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 47F14E847E018FB38D8E6497 /* FoundationSmokeTests.swift */; };
 		761780ED2CA45674006654EE /* AppDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = 761780EC2CA45674006654EE /* AppDelegate.swift */; };
 		81AB9BB82411601600AC10FF /* LaunchScreen.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = 81AB9BB72411601600AC10FF /* LaunchScreen.storyboard */; };
+		F766B38F5BF8A6586C90B6EC /* Foundation.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = ABB85C188971BC047B6E874E /* Foundation.framework */; };
 /* End PBXBuildFile section */
+
+/* Begin PBXContainerItemProxy section */
+		8C40EBE098A28C31DDA2B166 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 83CBB9F71A601CBA00E9B192 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = 13B07F861A680F5B00A75B9A;
+			remoteInfo = TruckRouteSavings;
+		};
+/* End PBXContainerItemProxy section */
 
 /* Begin PBXFileReference section */
 		13B07F961A680F5B00A75B9A /* TruckRouteSavings.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = TruckRouteSavings.app; sourceTree = BUILT_PRODUCTS_DIR; };
@@ -19,10 +31,13 @@
 		13B07FB61A68108700A75B9A /* Info.plist */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.plist.xml; name = Info.plist; path = TruckRouteSavings/Info.plist; sourceTree = "<group>"; };
 		13B07FB81A68108700A75B9A /* PrivacyInfo.xcprivacy */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.plist.xml; name = PrivacyInfo.xcprivacy; path = TruckRouteSavings/PrivacyInfo.xcprivacy; sourceTree = "<group>"; };
 		3B4392A12AC88292D35C810B /* Pods-TruckRouteSavings.debug.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-TruckRouteSavings.debug.xcconfig"; path = "Target Support Files/Pods-TruckRouteSavings/Pods-TruckRouteSavings.debug.xcconfig"; sourceTree = "<group>"; };
+		47F14E847E018FB38D8E6497 /* FoundationSmokeTests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; name = FoundationSmokeTests.swift; path = TruckRouteSavingsUITests/FoundationSmokeTests.swift; sourceTree = "<group>"; };
 		5709B34CF0A7D63546082F79 /* Pods-TruckRouteSavings.release.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-TruckRouteSavings.release.xcconfig"; path = "Target Support Files/Pods-TruckRouteSavings/Pods-TruckRouteSavings.release.xcconfig"; sourceTree = "<group>"; };
 		5DCACB8F33CDC322A6C60F78 /* libPods-TruckRouteSavings.a */ = {isa = PBXFileReference; explicitFileType = archive.ar; includeInIndex = 0; path = "libPods-TruckRouteSavings.a"; sourceTree = BUILT_PRODUCTS_DIR; };
 		761780EC2CA45674006654EE /* AppDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = AppDelegate.swift; path = TruckRouteSavings/AppDelegate.swift; sourceTree = "<group>"; };
 		81AB9BB72411601600AC10FF /* LaunchScreen.storyboard */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = file.storyboard; name = LaunchScreen.storyboard; path = TruckRouteSavings/LaunchScreen.storyboard; sourceTree = "<group>"; };
+		9882E5838561D3426FA226CA /* TruckRouteSavingsUITests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = TruckRouteSavingsUITests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
+		ABB85C188971BC047B6E874E /* Foundation.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Foundation.framework; path = Platforms/iPhoneOS.platform/Developer/SDKs/iPhoneOS14.0.sdk/System/Library/Frameworks/Foundation.framework; sourceTree = DEVELOPER_DIR; };
 		ED297162215061F000B7C4FE /* JavaScriptCore.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = JavaScriptCore.framework; path = System/Library/Frameworks/JavaScriptCore.framework; sourceTree = SDKROOT; };
 /* End PBXFileReference section */
 
@@ -32,6 +47,14 @@
 			buildActionMask = 2147483647;
 			files = (
 				0C80B921A6F3F58F76C31292 /* libPods-TruckRouteSavings.a in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		975DC1E7929D86856521C223 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				F766B38F5BF8A6586C90B6EC /* Foundation.framework in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -55,8 +78,17 @@
 			children = (
 				ED297162215061F000B7C4FE /* JavaScriptCore.framework */,
 				5DCACB8F33CDC322A6C60F78 /* libPods-TruckRouteSavings.a */,
+				7786AB3FBA15B0B78406D9C5 /* iOS */,
 			);
 			name = Frameworks;
+			sourceTree = "<group>";
+		};
+		7786AB3FBA15B0B78406D9C5 /* iOS */ = {
+			isa = PBXGroup;
+			children = (
+				ABB85C188971BC047B6E874E /* Foundation.framework */,
+			);
+			name = iOS;
 			sourceTree = "<group>";
 		};
 		832341AE1AAA6A7D00B99B32 /* Libraries */ = {
@@ -74,6 +106,7 @@
 				83CBBA001A601CBA00E9B192 /* Products */,
 				2D16E6871FA4F8E400B85C8A /* Frameworks */,
 				BBD78D7AC51CEA395F1C20DB /* Pods */,
+				47F14E847E018FB38D8E6497 /* FoundationSmokeTests.swift */,
 			);
 			indentWidth = 2;
 			sourceTree = "<group>";
@@ -84,6 +117,7 @@
 			isa = PBXGroup;
 			children = (
 				13B07F961A680F5B00A75B9A /* TruckRouteSavings.app */,
+				9882E5838561D3426FA226CA /* TruckRouteSavingsUITests.xctest */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -121,6 +155,24 @@
 			productReference = 13B07F961A680F5B00A75B9A /* TruckRouteSavings.app */;
 			productType = "com.apple.product-type.application";
 		};
+		D6B1628C6FCFC23D725C4251 /* TruckRouteSavingsUITests */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = CCE8D551A1ECED3C33BF9312 /* Build configuration list for PBXNativeTarget "TruckRouteSavingsUITests" */;
+			buildPhases = (
+				6E280096823A6226ED6175D9 /* Sources */,
+				975DC1E7929D86856521C223 /* Frameworks */,
+				CE35F0A9CBFEFE7247244D41 /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+				7FF9B63961187FA072AF3F87 /* PBXTargetDependency */,
+			);
+			name = TruckRouteSavingsUITests;
+			productName = TruckRouteSavingsUITests;
+			productReference = 9882E5838561D3426FA226CA /* TruckRouteSavingsUITests.xctest */;
+			productType = "com.apple.product-type.bundle.ui-testing";
+		};
 /* End PBXNativeTarget section */
 
 /* Begin PBXProject section */
@@ -131,6 +183,9 @@
 				TargetAttributes = {
 					13B07F861A680F5B00A75B9A = {
 						LastSwiftMigration = 1120;
+					};
+					D6B1628C6FCFC23D725C4251 = {
+						TestTargetID = 13B07F861A680F5B00A75B9A;
 					};
 				};
 			};
@@ -148,6 +203,7 @@
 			projectRoot = "";
 			targets = (
 				13B07F861A680F5B00A75B9A /* TruckRouteSavings */,
+				D6B1628C6FCFC23D725C4251 /* TruckRouteSavingsUITests */,
 			);
 		};
 /* End PBXProject section */
@@ -159,6 +215,13 @@
 			files = (
 				81AB9BB82411601600AC10FF /* LaunchScreen.storyboard in Resources */,
 				13B07FBF1A68108700A75B9A /* Images.xcassets in Resources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		CE35F0A9CBFEFE7247244D41 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -248,7 +311,24 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
+		6E280096823A6226ED6175D9 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				38D6D73198703242AF1E9645 /* FoundationSmokeTests.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 /* End PBXSourcesBuildPhase section */
+
+/* Begin PBXTargetDependency section */
+		7FF9B63961187FA072AF3F87 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			name = TruckRouteSavings;
+			target = 13B07F861A680F5B00A75B9A /* TruckRouteSavings */;
+			targetProxy = 8C40EBE098A28C31DDA2B166 /* PBXContainerItemProxy */;
+		};
+/* End PBXTargetDependency section */
 
 /* Begin XCBuildConfiguration section */
 		13B07F941A680F5B00A75B9A /* Debug */ = {
@@ -306,6 +386,45 @@
 				SWIFT_VERSION = 5.0;
 				TARGETED_DEVICE_FAMILY = "1,2";
 				VERSIONING_SYSTEM = "apple-generic";
+			};
+			name = Release;
+		};
+		70F8D698D6E661E3EAE38391 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CLANG_ENABLE_OBJC_WEAK = NO;
+				GENERATE_INFOPLIST_FILE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 15.1;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@loader_path/Frameworks",
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = com.truckroutesavings.uitests;
+				SDKROOT = iphoneos;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				TEST_TARGET_NAME = TruckRouteSavings;
+			};
+			name = Debug;
+		};
+		778CA0E8D47C0C107A438293 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CLANG_ENABLE_OBJC_WEAK = NO;
+				GENERATE_INFOPLIST_FILE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 15.1;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@loader_path/Frameworks",
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = com.truckroutesavings.uitests;
+				SDKROOT = iphoneos;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				TEST_TARGET_NAME = TruckRouteSavings;
+				VALIDATE_PRODUCT = YES;
 			};
 			name = Release;
 		};
@@ -465,6 +584,15 @@
 			buildConfigurations = (
 				83CBBA201A601CBA00E9B192 /* Debug */,
 				83CBBA211A601CBA00E9B192 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		CCE8D551A1ECED3C33BF9312 /* Build configuration list for PBXNativeTarget "TruckRouteSavingsUITests" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				778CA0E8D47C0C107A438293 /* Release */,
+				70F8D698D6E661E3EAE38391 /* Debug */,
 			);
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;

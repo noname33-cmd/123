@@ -142,3 +142,14 @@ HERE Navigate не установлен. До интеграции нужно п
 Состояние проверок и следующий шаг описаны в `docs/audit.md`. Наличие workflow не означает успешный запуск CI или native builds.
 
 Публикация исходников: [noname33-cmd/123](https://github.com/noname33-cmd/123). [Итоговый CI run](https://github.com/noname33-cmd/123/actions/runs/38683058653) прошёл полностью на коммите f0daacc9832e5af17a1c3c1fbd21147fb6c420a7. Проверены frozen install, lint, typecheck, build, 11 tests, PostGIS/Redis, Android native build/UI smoke и iOS native Simulator build (Xcode 16.4, SDK 18.5). iOS runtime, физические устройства и release signing не проверены.
+
+## iOS launch/UI smoke
+
+После frozen install, navigation build и `bundle exec pod install --deployment` на macOS задайте UDID отдельного iOS Simulator:
+
+```sh
+export IOS_SIMULATOR_UDID="<UUID из xcrun simctl list devices>"
+pnpm test:ios
+```
+
+Команда запускается из корня workspace, выбирает только указанный Simulator, при необходимости загружает его и выполняет XCTest `FoundationSmokeTests`. Debug JS bundle встраивается через FORCE_BUNDLING=1 (поддерживается установленным RN script); Metro не требуется. Проверяются три точных текста shell, их доступность для взаимодействия и foreground state. Screenshot и UI hierarchy сохраняются в `.xcresult` под `artifacts/ios-smoke/`, включая ошибки теста после запуска приложения. Команда не удаляет пользовательский Simulator. CI создаёт и удаляет собственный iPhone 16 / iOS 18.5 Simulator, использует Xcode 16.4, сохраняет `.xcresult` и журнал в ios-build-evidence. Native результат этой итерации пока ожидается; локальные script tests не подтверждают iOS runtime.

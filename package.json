@@ -10,7 +10,8 @@
     "infra:check": "docker compose -f infra/compose.yaml config --quiet",
     "test:infra": "node scripts/verify-infra.cjs",
     "test:scripts": "node --test scripts/*.test.cjs",
-    "test:android": "node scripts/verify-android.cjs"
+    "test:android": "node scripts/verify-android.cjs",
+    "test:ios": "node scripts/verify-ios.cjs"
   },
   "devDependencies": {"turbo": "2.11.8", "typescript": "5.9.3", "eslint": "8.57.1", "@typescript-eslint/parser": "7.18.0", "@typescript-eslint/eslint-plugin": "7.18.0"}
 }
