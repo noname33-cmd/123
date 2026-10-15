@@ -60,9 +60,9 @@ Android Emulator 37.3.4 (build 16555280) и AOSP API 35 default x86_64 system im
 ## Невыполненные проверки и открытые риски
 
 - Android release binary, 32-bit ABIs и запуск на физическом ARM-устройстве не проверены. Debug x86_64/arm64-v8a builds и signature/manifest inspection прошли; runtime smoke выполнен только на API 35 x86_64 AVD.
-- CocoaPods install и Xcode native Simulator build прошли на macos-15. Запуск приложения на iOS simulator/device не проверен.
+- CocoaPods install и Xcode native Simulator build прошли на macos-15. Запуск и UI smoke прошли на iPhone 16 Simulator / iOS 18.5; физическое iOS-устройство не проверено.
 - Установка на отдельной физической машине не выполнялась; проверены чистый Windows workspace и изолированный Linux container без package cache.
-- Реализован и выполнен только Android launch/UI smoke. Полные business E2E, другие API levels и физические устройства не проверены; iOS runtime не проверен.
+- Реализованы и выполнены Android launch/UI smoke и iOS XCTest smoke. Полные business E2E, другие API levels и физические устройства не проверены; iOS runtime подтверждён XCTest на одной конфигурации Simulator (итог ниже).
 - Gemfile.lock создан и frozen install проверен в Linux. Podfile.lock получен из успешного macOS CI build и добавлен в исходники; CI использует pod install --deployment. Gradle dependency lockfiles отсутствуют; полную воспроизводимость native builds пока заявлять нельзя.
 - ESLint 8 и ряд transitive dependencies deprecated; версия сохранена для совместимости RN template, миграцию следует проверить отдельно.
 - Native build выдаёт предупреждения о Gradle APIs, несовместимых с будущим Gradle 10, и SDK XML version 4 при parser version 3. На текущем Gradle 9.0.0 сборка успешна; обновление toolchain требует отдельной проверки.
@@ -72,7 +72,7 @@ Android Emulator 37.3.4 (build 16555280) и AOSP API 35 default x86_64 system im
 
 ## Критерий завершения
 
-JS-фундамент проверен в чистых Windows/Linux workspace, infrastructure runtime подтверждён, Android debug x86_64/arm64 APK собраны, x86_64 shell реально запущен на AVD. Всего прошли 11 unit/component/HTTP/script tests плюс Android device smoke и infrastructure runtime checks. Установка, сборки, тесты и запуск backend/Android подтверждены локально и в чистом CI. iOS native Simulator build также прошёл, однако запуск iOS приложения на simulator/device не проверен. Исходники опубликованы с разрешения пользователя. Следующий отдельный шаг — iOS launch/UI smoke; release builds, physical devices и Gradle dependency locking остаются за пределами подтверждённых проверок. Реальная HERE/GPS интеграция не добавляется.
+JS-фундамент проверен в чистых Windows/Linux workspace, infrastructure runtime подтверждён, Android debug x86_64/arm64 APK собраны, x86_64 shell реально запущен на AVD. Всего прошли 14 unit/component/HTTP/script tests, 1 iOS XCTest, Android device smoke и infrastructure runtime checks. Установка, сборки, тесты и запуск backend/Android подтверждены локально и в чистом CI. iOS native Simulator build и launch/UI smoke также прошли (run 38686080630). Исходники опубликованы с разрешения пользователя. Следующий отдельный шаг — Gradle dependency locking; release builds, physical devices и Gradle dependency locking остаются за пределами подтверждённых проверок. Реальная HERE/GPS интеграция не добавляется.
 
 ## Продолжение 2026-10-15: Linux и Ruby reproducibility
 
@@ -202,6 +202,32 @@ Artifacts: android-debug-x86_64, android-smoke-evidence (ZIP SHA-256 3127f141cd6
 
 Добавлен реальный UI-test target TruckRouteSavingsUITests вместо ссылки scheme на отсутствующий TruckRouteSavingsTests. Один XCTest запускает приложение, ожидает три текста shell, проверяет ненулевые рамки текста внутри app frame, отсутствие alerts и runningForeground, сохраняет screenshot/hierarchy в xcresult. Добавлена команда test:ios, явный simulator UUID, отказ для неподходящих/недоступных устройств. CI использует отдельный Simulator, встраивает JS bundle без Metro и сохраняет evidence.
 
-Локально: 9 script tests (6 существующих + 3 новых) и lint scripts прошли; git diff --check успешен. Swift compile, XCTest и iOS runtime пока не выполнены для этой итерации, ожидается macOS CI. Новые product modules и SDK не добавлены.
+Локально: 9 script tests (6 существующих + 3 новых) и lint scripts прошли; git diff --check успешен. На этом этапе native результат ожидался; Swift compile, XCTest и iOS runtime впоследствии подтверждены в итоговом run ниже. Новые product modules и SDK не добавлены.
 
-Промежуточные проверки: первый native test build выявил пустой PRODUCT_NAME у UI-test target — исправлено для Debug/Release. Второй run скомпилировал и выполнил 1 XCTest: заголовок существовал, но isHittable=false. Запись экрана извлечена из сохранённого xcresult, визуально подтверждены все три текста без обрезки. Для статического текста проверка заменена на ненулевую рамку внутри экрана; проверка foreground и отсутствие alerts сохранены. Attachments перенесены в XCTest tearDownWithError для сохранения при assertion failure; добавлен экспорт через xcresulttool. Исправлен оставшийся template CFBundleDisplayName. Новый результат пока ожидается.
+Промежуточные проверки: первый native test build выявил пустой PRODUCT_NAME у UI-test target — исправлено для Debug/Release. Второй run скомпилировал и выполнил 1 XCTest: заголовок существовал, но isHittable=false. Запись экрана извлечена из сохранённого xcresult, визуально подтверждены все три текста без обрезки. Для статического текста проверка заменена на ненулевую рамку внутри экрана; проверка foreground и отсутствие alerts сохранены. Attachments перенесены в XCTest tearDownWithError для сохранения при assertion failure; добавлен экспорт через xcresulttool. Исправлен оставшийся template CFBundleDisplayName. Новый результат успешен, приведён ниже.
+
+## Итог iOS launch/UI smoke
+
+[Run 38686080630](https://github.com/noname33-cmd/123/actions/runs/38686080630), commit `3d7b5af78bde6f5d48fb3700180f5fe38a8de5b1`: checks, android, ios — **success**. Frozen install, lint, typecheck, JS/native builds, 14 JS tests, PostGIS/Redis и Android device smoke прошли.
+
+XCTest FoundationSmokeTests.testFoundationShellIsVisible реально выполнен на отдельном iPhone 16 Simulator / iOS 18.5 / Xcode 16.4: **1 test, 0 failures**, 25.008 секунды. Проверены три точных текста, ненулевые рамки внутри экрана, отсутствие alerts и runningForeground. Screenshot и hierarchy сохранены через tearDownWithError и экспортированы xcresulttool; screenshot визуально проверен — все сообщения видимы, обрезки нет. Проверка рамок не доказывает отсутствие произвольных перекрытий, поэтому screenshot проверен отдельно. В Debug виден стандартный баннер RN подключения Metro; CI не запускал Metro, использовался встроенный JS bundle.
+
+ios-build-evidence artifact: 11950912304; ZIP SHA-256 bcdf0e33febd09a91570bc5d0e9aa75bf02b421800019457a43c5f1cbe80e8d9 совпал с GitHub digest. Podfile.lock SHA-256 после deployment install совпал с исходником: 2604b1449eb53cb7ee5f862b49ead415f3006b50a5fe1f050d527568633de3d3. Локальные evidence находятся в artifacts/ios-smoke-passed и исключены из Git. CI simulator удалён успешно.
+
+Не проверены: physical iOS/ARM devices, другие iOS/API versions, release signing/builds, business E2E. Gradle dependency locking остаётся отдельным шагом. HERE/GPS SDK и product modules не добавлялись.
+
+Файлы этой задачи (11):
+
+- .github/workflows/ci.yml
+- package.json
+- scripts/verify-ios.cjs
+- scripts/verify-ios.test.cjs
+- apps/mobile/ios/TruckRouteSavingsUITests/FoundationSmokeTests.swift
+- apps/mobile/ios/TruckRouteSavings.xcodeproj/project.pbxproj
+- apps/mobile/ios/TruckRouteSavings.xcodeproj/xcshareddata/xcschemes/TruckRouteSavings.xcscheme
+- apps/mobile/ios/TruckRouteSavings/Info.plist
+- README.md
+- apps/mobile/README.md
+- docs/audit.md
+
+Итоговое обновление только документации публикуется с [skip ci]; код соответствует проверенному commit выше.
