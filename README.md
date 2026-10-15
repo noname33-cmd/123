@@ -108,14 +108,14 @@ POSIX: задайте те же переменные через `export`. Нуж
 
 ## iOS shell (только macOS)
 
-Нужны Xcode ≥16.1 и iOS deployment target ≥15.1; эти минимумы проверены в scripts/cocoapods/helpers.rb установленного React Native 0.84.0. Ruby 3.3.12 зафиксирован в apps/mobile/.ruby-version, Bundler 2.5.22 и Ruby gems — в Gemfile.lock. Lock содержит arm64-darwin и x86_64-darwin. Версии CocoaPods 1.15.2 и Xcodeproj 1.25.1 получены из существующих ограничений Gemfile; их совместимость с Xcode ещё требует macOS-проверки. В CI используется macos-15 с frozen Bundler, CI запущен, результат ещё необходимо подтвердить.
+Нужны Xcode ≥16.1 и iOS deployment target ≥15.1; эти минимумы проверены в scripts/cocoapods/helpers.rb установленного React Native 0.84.0. Ruby 3.3.12 зафиксирован в apps/mobile/.ruby-version, Bundler 2.5.22 и Ruby gems — в Gemfile.lock. Lock содержит arm64-darwin и x86_64-darwin. Версии CocoaPods 1.15.2 и Xcodeproj 1.25.1 получены из существующих ограничений Gemfile; pod install и native Simulator build успешно выполнены на macos-15. В CI используется macos-15 с frozen Bundler, iOS job прошёл. Podfile.lock получен из успешного CI build; CI использует pod install --deployment.
 
 ```sh
 pnpm --filter @truck/navigation build
 cd apps/mobile
 BUNDLE_FROZEN=true bundle install
 cd ios
-bundle exec pod install
+bundle exec pod install --deployment
 xcodebuild -workspace TruckRouteSavings.xcworkspace -scheme TruckRouteSavings -configuration Debug -sdk iphonesimulator -destination 'generic/platform=iOS Simulator' CODE_SIGNING_ALLOWED=NO build
 # из корня, с Metro в отдельном терминале:
 pnpm --filter @truck/mobile ios

@@ -60,11 +60,11 @@ Android Emulator 37.3.4 (build 16555280) и AOSP API 35 default x86_64 system im
 ## Невыполненные проверки и открытые риски
 
 - Android release binary, 32-bit ABIs и запуск на физическом ARM-устройстве не проверены. Debug x86_64/arm64-v8a builds и signature/manifest inspection прошли; runtime smoke выполнен только на API 35 x86_64 AVD.
-- CocoaPods install, Xcode native build и запуск на simulator/device: не выполнены, требуется macOS/Xcode.
+- CocoaPods install и Xcode native Simulator build прошли на macos-15. Запуск приложения на iOS simulator/device не проверен.
 - GitHub Actions запущен после разрешённой публикации в noname33-cmd/123; результат пока ожидается. YAML parsing не подтверждает успех workflow.
 - Установка на отдельной физической машине не выполнялась; проверены чистый Windows workspace и изолированный Linux container без package cache.
 - Реализован и выполнен только Android launch/UI smoke. Полные business E2E, другие API levels и физические устройства не проверены; iOS runtime не проверен.
-- Gemfile.lock создан и frozen install проверен в Linux. Podfile.lock и Gradle dependency lockfiles по-прежнему отсутствуют; полную воспроизводимость native builds пока заявлять нельзя.
+- Gemfile.lock создан и frozen install проверен в Linux. Podfile.lock получен из успешного macOS CI build и добавлен в исходники; CI использует pod install --deployment. Gradle dependency lockfiles отсутствуют; полную воспроизводимость native builds пока заявлять нельзя.
 - ESLint 8 и ряд transitive dependencies deprecated; версия сохранена для совместимости RN template, миграцию следует проверить отдельно.
 - Native build выдаёт предупреждения о Gradle APIs, несовместимых с будущим Gradle 10, и SDK XML version 4 при parser version 3. На текущем Gradle 9.0.0 сборка успешна; обновление toolchain требует отдельной проверки.
 - HERE Navigate licence, SDK methods, bridge и native version compatibility не проверялись. HERE не устанавливался, интеграция не заявляется.
@@ -180,3 +180,7 @@ JS-фундамент проверен в чистых Windows/Linux workspace, 
 - scripts/verify-android.test.cjs
 - tsconfig.base.json
 - turbo.json
+
+## GitHub native validation 2026-10-15
+
+В runs 38681590319 и 38681772864 jobs checks и ios прошли. Native Simulator build: **BUILD SUCCEEDED**, CocoaPods 1.15.2; iOS runtime не проверен. Podfile.lock извлечён из ios-build-evidence второго run; SHA-256 ZIP совпал с GitHub artifact digest ef05464f47da5fddba6a05b33aad3d2113b136d15489238e00d11ca718d97f70. Lock не содержит абсолютных runner paths. Android APK собран; emulator smoke ещё выполняется.

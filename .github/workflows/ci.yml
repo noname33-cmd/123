@@ -101,7 +101,7 @@ jobs:
           working-directory: apps/mobile
           bundler-cache: true
       - working-directory: apps/mobile/ios
-        run: bundle exec pod install
+        run: bundle exec pod install --deployment
       - working-directory: apps/mobile/ios
         run: |
           set -o pipefail
