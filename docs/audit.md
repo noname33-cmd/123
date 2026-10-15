@@ -63,7 +63,7 @@ Android Emulator 37.3.4 (build 16555280) и AOSP API 35 default x86_64 system im
 - CocoaPods install и Xcode native Simulator build прошли на macos-15. Запуск и UI smoke прошли на iPhone 16 Simulator / iOS 18.5; физическое iOS-устройство не проверено.
 - Установка на отдельной физической машине не выполнялась; проверены чистый Windows workspace и изолированный Linux container без package cache.
 - Реализованы и выполнены Android launch/UI smoke и iOS XCTest smoke. Полные business E2E, другие API levels и физические устройства не проверены; iOS runtime подтверждён XCTest на одной конфигурации Simulator (итог ниже).
-- Gemfile.lock создан и frozen install проверен в Linux. Podfile.lock получен из успешного macOS CI build и добавлен в исходники; CI использует pod install --deployment. Gradle dependency lockfiles отсутствуют; полную воспроизводимость native builds пока заявлять нельзя.
+- Gemfile.lock создан и frozen install проверен в Linux. Podfile.lock получен из успешного macOS CI build и добавлен в исходники; CI использует pod install --deployment. Project Gradle dependency graphs и root buildscript classpath зафиксированы; included/plugin-management/library buildscript contexts остаются отдельными границами. Побайтовая воспроизводимость всех native artifacts не заявляется.
 - ESLint 8 и ряд transitive dependencies deprecated; версия сохранена для совместимости RN template, миграцию следует проверить отдельно.
 - Native build выдаёт предупреждения о Gradle APIs, несовместимых с будущим Gradle 10, и SDK XML version 4 при parser version 3. На текущем Gradle 9.0.0 сборка успешна; обновление toolchain требует отдельной проверки.
 - HERE Navigate licence, SDK methods, bridge и native version compatibility не проверялись. HERE не устанавливался, интеграция не заявляется.
@@ -72,7 +72,7 @@ Android Emulator 37.3.4 (build 16555280) и AOSP API 35 default x86_64 system im
 
 ## Критерий завершения
 
-JS-фундамент проверен в чистых Windows/Linux workspace, infrastructure runtime подтверждён, Android debug x86_64/arm64 APK собраны, x86_64 shell реально запущен на AVD. Всего прошли 14 unit/component/HTTP/script tests, 1 iOS XCTest, Android device smoke и infrastructure runtime checks. Установка, сборки, тесты и запуск backend/Android подтверждены локально и в чистом CI. iOS native Simulator build и launch/UI smoke также прошли (run 38686080630). Исходники опубликованы с разрешения пользователя. Следующий отдельный шаг — Gradle dependency locking; release builds, physical devices и Gradle dependency locking остаются за пределами подтверждённых проверок. Реальная HERE/GPS интеграция не добавляется.
+JS-фундамент проверен в чистых Windows/Linux workspace, infrastructure runtime подтверждён, Android debug x86_64/arm64 APK собраны, x86_64 shell реально запущен на AVD. Всего прошли 14 unit/component/HTTP/script tests, 1 iOS XCTest, Android device smoke и infrastructure runtime checks. Установка, сборки, тесты и запуск backend/Android подтверждены локально и в чистом CI. iOS native Simulator build и launch/UI smoke также прошли (run 38686080630). Исходники опубликованы с разрешения пользователя. Следующий отдельный шаг — Prisma/PostgreSQL backend module с integration test; release builds, physical devices и оставшиеся Gradle build contexts остаются за пределами подтверждённых проверок. Реальная HERE/GPS интеграция не добавляется.
 
 ## Продолжение 2026-10-15: Linux и Ruby reproducibility
 
@@ -234,8 +234,37 @@ ios-build-evidence artifact: 11950912304; ZIP SHA-256 bcdf0e33febd09a91570bc5d0e
 
 ## Продолжение: Android dependency locking
 
-Добавлены project strict locks, отдельный root buildscript lock с presence guard, команда resolveDependencyLocks и отрицательная init fixture отсутствующего app state. Lockfiles library сохраняются вне node_modules. Массовое разрешение использует graph API с проверкой UnresolvedDependencyResult. Первые попытки выявили неоднозначность artifact variants и Kotlin metadata buckets; graph resolution устранил artifact selection, *DependenciesMetadata исключены из массового разрешения, оставаясь в STRICT. Генерация locks завершилась BUILD SUCCESSFUL в 18 секунд. Повторное graph resolution без --write-locks успешно; APK build затем завершился BUILD SUCCESSFUL: 88 tasks, 2m29s, без --write-locks. Negative app fixture отклонена strict mode (exit 1, does not have lock state); отдельная локальная проверка отсутствующего root buildscript lock отклонена presence guard (exit 1), файл восстановлен в finally. Все три lockfile после проверок побайтово совпали с исходниками. Первая версия init fixture затрагивала included build без :app; исправлена фильтрацией root project name. CI пока ожидается.
+Добавлены project strict locks, отдельный root buildscript lock с presence guard, команда resolveDependencyLocks и отрицательная init fixture отсутствующего app state. Lockfiles library сохраняются вне node_modules. Массовое разрешение использует graph API с проверкой UnresolvedDependencyResult. Первые попытки выявили неоднозначность artifact variants и Kotlin metadata buckets; graph resolution устранил artifact selection, *DependenciesMetadata исключены из массового разрешения, оставаясь в STRICT. Генерация locks завершилась BUILD SUCCESSFUL в 18 секунд. Повторное graph resolution без --write-locks успешно; APK build затем завершился BUILD SUCCESSFUL: 88 tasks, 2m29s, без --write-locks. Negative app fixture отклонена strict mode (exit 1, does not have lock state); отдельная локальная проверка отсутствующего root buildscript lock отклонена presence guard (exit 1), файл восстановлен в finally. Все три lockfile после проверок побайтово совпали с исходниками. Первая версия init fixture затрагивала included build без :app; исправлена фильтрацией root project name. CI успешно выполнен, итог приведён ниже.
 
-Root buildscript uses Gradle default lock validation plus explicit presence guard. Project configurations use STRICT. Settings/plugin-management contexts, included RN plugin builds и сторонние library buildscript classpaths не охвачены этими locks. Версии исходников таких npm packages закреплены pnpm-lock; checksums Maven artifacts и отдельный locking build contexts не добавлены. Новые native SDK/product modules не устанавливались.
+Root buildscript использует стандартную Gradle lock validation и явный presence guard. Project configurations используют STRICT. Settings/plugin-management contexts, included RN plugin builds и сторонние library buildscript classpaths не охвачены этими locks. Версии исходников таких npm packages закреплены pnpm-lock; checksums Maven artifacts и отдельный locking build contexts не добавлены. Новые native SDK/product modules не устанавливались.
 
-Lockfile SHA-256: buildscript-gradle.lockfile ca44969860f7ce50d5faf452bcbf746bd13e0da252dfbedb00b88d13de0d5a06; app.lockfile eaf076345d360dd159a63f230a0a9ec623d78f14fb437dfd71244c4316067a68; react-native-safe-area-context.lockfile 25164c128d8f2598e4f76c630b57fc4a9da9688393f4dfe8953f92a88914c357.
+Локальные Windows lockfiles (CRLF), SHA-256 до Git-нормализации: buildscript-gradle.lockfile ca44969860f7ce50d5faf452bcbf746bd13e0da252dfbedb00b88d13de0d5a06; app.lockfile eaf076345d360dd159a63f230a0a9ec623d78f14fb437dfd71244c4316067a68; react-native-safe-area-context.lockfile 25164c128d8f2598e4f76c630b57fc4a9da9688393f4dfe8953f92a88914c357.
+
+Опубликованные lockfiles (Git/LF), SHA-256: buildscript-gradle.lockfile ee79dc5748a4dd93d54eac03919c5e83cfe5d5e66ebde2f14d626b52d1e7c63e; app.lockfile 65a031b1d1a086d57c97f41c4c224acd54da168bf1d154f8648565fa155ab683; react-native-safe-area-context.lockfile e829459c015bb9caca2227db24ad3116df6bf0988dca932019dd53d9027173de. Рабочие копии приведены к опубликованному LF, байты сверены с git show HEAD:<path>. Первоначальная проверка неизменности Windows build выполнялась с CRLF с обеих сторон; различие только в нормализации окончаний строк.
+
+CI run 38691647263 на commit ac50fb210d1a5567ac2e4014c866baadf07e9eca: checks и android прошли. Android fresh Linux runner: resolveDependencyLocks + assembleDebug BUILD SUCCESSFUL в 3m3s; negative missing-state fixture прошла, git diff lockfiles пуст, API 35 x86_64 emulator UI smoke прошёл. iOS regression job также прошла: 1 XCTest, 0 failures (20.707 секунды).
+
+## Итог Android dependency locking
+
+[Run 38691647263](https://github.com/noname33-cmd/123/actions/runs/38691647263), commit `ac50fb210d1a5567ac2e4014c866baadf07e9eca`: **checks, android, ios success**.
+
+В чистом CI прошли frozen install, lint, typecheck, JS/native builds, 14 JS unit/component/HTTP/script tests, PostGIS/Redis integration, Android graph resolution и APK build без --write-locks, negative missing-state test, git diff lockfiles, Android device smoke и 1 iOS XCTest (0 failures). Локально Windows build и обе negative scenarios (app state/root buildscript file) также прошли; изменяемый для root-guard test файл находился только в validation workspace и восстановлен в finally.
+
+Evidence ZIP digests сверены: android-smoke-evidence artifact 11952611745 — 068d56637c4aa11f6db4ab7b0cf49547e8fa3590302e89f34aef6c04e2c8c885; ios-build-evidence artifact 11952532832 — 574453090a4be6b5f2035cd618e0bd516df825df6a955a40f5e59189bac57045. Android artifact содержит missing-lock.log; iOS log подтверждает Executed 1 test, 0 failures. Локальные evidence в artifacts/gradle-lock-ci-android и artifacts/gradle-lock-ci-ios исключены из Git.
+
+Не выполнены в этой задаче: release binary/signing, physical devices, другие OS/ABI runtime configurations; отдельный locking settings/included/library buildscript contexts; Maven artifact checksum verification. Kotlin metadata buckets без Android variant остаются STRICT, но требуют отдельного целевого разрешения при будущем использовании. Новые product modules, HERE/GPS SDK, Prisma integration пока не добавлены. Следующий отдельный шаг — Prisma/PostgreSQL backend connection module и integration test.
+
+Изменённые/добавленные файлы (10):
+
+- apps/mobile/android/build.gradle
+- apps/mobile/android/buildscript-gradle.lockfile
+- apps/mobile/android/gradle/dependency-locking.gradle
+- apps/mobile/android/gradle/dependency-locks/app.lockfile
+- apps/mobile/android/gradle/dependency-locks/react-native-safe-area-context.lockfile
+- scripts/gradle-missing-lock.init.gradle
+- .github/workflows/ci.yml
+- README.md
+- apps/mobile/README.md
+- docs/audit.md
+
+Итоговая правка только документации публикуется с [skip ci]. Исходники соответствуют проверенному commit выше; git diff --check прошёл.
