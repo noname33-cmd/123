@@ -65,6 +65,11 @@ jobs:
         run: |
           mkdir -p artifacts
           (cd apps/mobile && pnpm start --no-interactive --max-workers 2 > ../../artifacts/metro.log 2>&1) &
+      - name: Enable KVM for runner user
+        run: |
+          sudo chown "$USER" /dev/kvm
+          sudo chmod 600 /dev/kvm
+          "$ANDROID_HOME/emulator/emulator" -accel-check
       - uses: reactivecircus/android-emulator-runner@v2
         with:
           api-level: 35
