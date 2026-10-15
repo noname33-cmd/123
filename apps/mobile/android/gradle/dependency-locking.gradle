@@ -1,0 +1,35 @@
+import org.gradle.api.artifacts.dsl.LockMode
+import org.gradle.api.artifacts.result.UnresolvedDependencyResult
+
+// Keep autolinked library lock state in source control, outside node_modules.
+allprojects {
+    def lockName = project == rootProject ? 'root' : project.path.substring(1).replace(':', '--')
+    dependencyLocking {
+        lockAllConfigurations()
+        lockMode = LockMode.STRICT
+        lockFile = rootProject.file("gradle/dependency-locks/${lockName}.lockfile")
+    }
+    tasks.register('resolveDependencyLocks') {
+        group = 'verification'
+        description = 'Resolve Android dependency graphs; use --write-locks only for intentional updates.'
+        doLast {
+            // Kotlin metadata buckets lack an Android build type and cannot choose library variants.
+            // They remain strictly locked: a future task resolving one requires explicit lock generation.
+            configurations.findAll { it.canBeResolved && !it.name.endsWith('DependenciesMetadata') }
+                .sort { it.name }.each { configuration ->
+                logger.lifecycle("Resolving ${project.path}:${configuration.name}")
+                // Lock the graph without selecting/downloading ambiguous Android artifact variants.
+                def unresolved = configuration.incoming.resolutionResult.allDependencies.findAll {
+                    it instanceof UnresolvedDependencyResult
+                }
+                if (!unresolved.empty) {
+                    throw new GradleException("Dependency graph failed for ${project.path}:${configuration.name}", unresolved.first().failure)
+                }
+            }
+        }
+    }
+}
+
+tasks.named('resolveDependencyLocks') {
+    dependsOn(subprojects.collect { "${it.path}:resolveDependencyLocks" })
+}

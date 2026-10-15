@@ -1,0 +1,11 @@
+// Negative integration fixture: strict mode must reject an absent lock state.
+// This changes only the in-memory configuration of this invocation.
+gradle.projectsEvaluated {
+    // Init scripts also run in included builds, which have no Android :app target.
+    if (gradle.rootProject.name == 'TruckRouteSavings') {
+        def app = gradle.rootProject.project(':app')
+        app.dependencyLocking.lockFile = new File(
+            gradle.gradleUserHomeDir, "truck-missing-lock-${UUID.randomUUID()}.lockfile"
+        )
+    }
+}

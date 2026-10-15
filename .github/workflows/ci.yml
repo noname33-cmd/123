@@ -55,7 +55,20 @@ jobs:
           mkdir -p "$HOME/.android"
           keytool -genkeypair -keystore "$HOME/.android/debug.keystore" -storepass android -alias androiddebugkey -keypass android -dname 'CN=Android Debug,O=Android,C=US' -keyalg RSA -keysize 2048 -validity 10000
       - working-directory: apps/mobile/android
-        run: bash gradlew assembleDebug -PreactNativeArchitectures=x86_64 --max-workers=2 --no-daemon
+        run: bash gradlew resolveDependencyLocks assembleDebug -PreactNativeArchitectures=x86_64 --max-workers=2 --no-daemon
+      - name: Reject missing dependency lock state
+        working-directory: apps/mobile/android
+        run: |
+          mkdir -p "$GITHUB_WORKSPACE/artifacts/android-locks"
+          LOG="$GITHUB_WORKSPACE/artifacts/android-locks/missing-lock.log"
+          if bash gradlew :app:resolveDependencyLocks -I ../../../scripts/gradle-missing-lock.init.gradle --offline -PreactNativeArchitectures=x86_64 --max-workers=2 --no-daemon > "$LOG" 2>&1; then
+            cat "$LOG"
+            echo 'Expected strict locking to reject absent state'
+            exit 1
+          fi
+          grep -F 'does not have lock state' "$LOG"
+      - name: Verify lockfiles are unchanged
+        run: git diff --exit-code -- apps/mobile/android/buildscript-gradle.lockfile apps/mobile/android/gradle/dependency-locks
       - uses: actions/upload-artifact@v4
         with:
           name: android-debug-x86_64

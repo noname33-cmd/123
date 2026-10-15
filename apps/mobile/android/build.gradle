@@ -1,4 +1,10 @@
 buildscript {
+    if (!gradle.startParameter.writeDependencyLocks && !file('buildscript-gradle.lockfile').isFile()) {
+        throw new GradleException('Missing buildscript-gradle.lockfile; generate dependency locks intentionally with --write-locks')
+    }
+    configurations.classpath {
+        resolutionStrategy.activateDependencyLocking()
+    }
     ext {
         buildToolsVersion = "36.0.0"
         minSdkVersion = 24
@@ -19,3 +25,5 @@ buildscript {
 }
 
 apply plugin: "com.facebook.react.rootproject"
+
+apply from: 'gradle/dependency-locking.gradle'

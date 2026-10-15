@@ -231,3 +231,11 @@ ios-build-evidence artifact: 11950912304; ZIP SHA-256 bcdf0e33febd09a91570bc5d0e
 - docs/audit.md
 
 Итоговое обновление только документации публикуется с [skip ci]; код соответствует проверенному commit выше.
+
+## Продолжение: Android dependency locking
+
+Добавлены project strict locks, отдельный root buildscript lock с presence guard, команда resolveDependencyLocks и отрицательная init fixture отсутствующего app state. Lockfiles library сохраняются вне node_modules. Массовое разрешение использует graph API с проверкой UnresolvedDependencyResult. Первые попытки выявили неоднозначность artifact variants и Kotlin metadata buckets; graph resolution устранил artifact selection, *DependenciesMetadata исключены из массового разрешения, оставаясь в STRICT. Генерация locks завершилась BUILD SUCCESSFUL в 18 секунд. Повторное graph resolution без --write-locks успешно; APK build затем завершился BUILD SUCCESSFUL: 88 tasks, 2m29s, без --write-locks. Negative app fixture отклонена strict mode (exit 1, does not have lock state); отдельная локальная проверка отсутствующего root buildscript lock отклонена presence guard (exit 1), файл восстановлен в finally. Все три lockfile после проверок побайтово совпали с исходниками. Первая версия init fixture затрагивала included build без :app; исправлена фильтрацией root project name. CI пока ожидается.
+
+Root buildscript uses Gradle default lock validation plus explicit presence guard. Project configurations use STRICT. Settings/plugin-management contexts, included RN plugin builds и сторонние library buildscript classpaths не охвачены этими locks. Версии исходников таких npm packages закреплены pnpm-lock; checksums Maven artifacts и отдельный locking build contexts не добавлены. Новые native SDK/product modules не устанавливались.
+
+Lockfile SHA-256: buildscript-gradle.lockfile ca44969860f7ce50d5faf452bcbf746bd13e0da252dfbedb00b88d13de0d5a06; app.lockfile eaf076345d360dd159a63f230a0a9ec623d78f14fb437dfd71244c4316067a68; react-native-safe-area-context.lockfile 25164c128d8f2598e4f76c630b57fc4a9da9688393f4dfe8953f92a88914c357.
