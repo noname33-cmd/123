@@ -1,4 +1,4 @@
-import React, {useState} from 'react';
+import React, {useRef, useState} from 'react';
 import {Button, StyleSheet, Text, TextInput, View, type TextInputProps} from 'react-native';
 import {parseTruckProfile, feetToMeters, inchesToMeters, poundsToKilograms, feetAndInchesToMeters,
   type TruckProfile, type VehicleType} from '@truck/truck-profile';
@@ -35,12 +35,12 @@ export function TruckProfileForm({store}: {store?: TruckProfileStore}) {
   const [storageBusy, setStorageBusy] = useState(false);
   const [vehicleType, setVehicleType] = useState<VehicleType>();
   const [mode, setMode] = useState<Mode>('m/kg');
-  const [drafts, setDrafts] = useState<Record<Mode, Record<Field, string>>>({
+  const drafts = useRef<Record<Mode, Record<Field, string>>>({
     'm/kg': {...empty}, 'ft/lb': {...empty}, 'in/lb': {...empty}, 'ft+in/lb': {...empty},
   });
-  const [inches, setInches] = useState({...emptyInches});
+  const inches = useRef({...emptyInches});
   const [restoreRevision, setRestoreRevision] = useState(0);
-  const values = drafts[mode];
+  const values = drafts.current[mode];
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [validated, setValidated] = useState<TruckProfile>();
   function validate() {
@@ -51,7 +51,7 @@ export function TruckProfileForm({store}: {store?: TruckProfileStore}) {
       for (const field of ['overallHeightMeters', 'overallWidthMeters', 'overallLengthMeters',
         'currentGrossMassKilograms'] as const) {
         const result = field === 'currentGrossMassKilograms' ? poundsToKilograms(values[field]) :
-          mode === 'ft+in/lb' ? feetAndInchesToMeters(values[field], inches[field]) :
+          mode === 'ft+in/lb' ? feetAndInchesToMeters(values[field], inches.current[field]) :
             mode === 'ft/lb' ? feetToMeters(values[field]) : inchesToMeters(values[field]);
         if (result.ok) {converted[field] = result.value;}
         else {
@@ -107,16 +107,18 @@ export function TruckProfileForm({store}: {store?: TruckProfileStore}) {
         keyboardType={field === 'name' ? 'default' : field === 'totalAxleCount' ||
           (mode === 'ft+in/lb' && isDimension(field)) ? 'number-pad' : 'decimal-pad'}
         style={styles.input} onChangeText={text => {
-          setDrafts(previous => ({...previous, [mode]: {...previous[mode], [field]: text}}));
-          setValidated(undefined); setErrors({});
+          drafts.current[mode][field] = text;
+          if (validated) {setValidated(undefined);}
+          if (Object.keys(errors).length) {setErrors({});}
         }} />
       {mode === 'ft+in/lb' && isDimension(field) ? <View>
         <Text>{siLabel.replace('(m)', '(in)')}</Text>
-        <DraftInput accessibilityLabel={siLabel.replace('(m)', '(in)')} initialValue={inches[field]}
+        <DraftInput accessibilityLabel={siLabel.replace('(m)', '(in)')} initialValue={inches.current[field]}
           editable={!storageBusy}
           keyboardType="decimal-pad" style={styles.input} onChangeText={text => {
-            setInches(previous => ({...previous, [field]: text}));
-            setValidated(undefined); setErrors({});
+            inches.current[field] = text;
+            if (validated) {setValidated(undefined);}
+            if (Object.keys(errors).length) {setErrors({});}
           }} />
       </View> : null}
       {errors[field] ? <Text accessibilityRole="alert">{errors[field]}</Text> : null}
@@ -131,11 +133,11 @@ export function TruckProfileForm({store}: {store?: TruckProfileStore}) {
       onRestore={profile => {
         setRestoreRevision(previous => previous + 1);
         setVehicleType(profile.vehicleType); setMode('m/kg'); setErrors({});
-        setDrafts(previous => ({...previous, 'm/kg': {
+        drafts.current['m/kg'] = {
           name: profile.name, overallHeightMeters: profile.overallHeightMeters,
           overallWidthMeters: profile.overallWidthMeters, overallLengthMeters: profile.overallLengthMeters,
           currentGrossMassKilograms: profile.currentGrossMassKilograms, totalAxleCount: String(profile.totalAxleCount),
-        }}));
+        };
         setValidated(profile);
       }} /> : null}
   </View>;

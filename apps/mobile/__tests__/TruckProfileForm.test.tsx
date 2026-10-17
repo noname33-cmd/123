@@ -109,12 +109,14 @@ for (const type of ['Rigid truck — no trailer', 'Tractor + one semitrailer']) 
 
 it('retains rapid edits and pasted decimal strings without controlling native text', async () => {
   let tree!: ReactTestRenderer;
-  await act(async () => {tree = renderer.create(<TruckProfileForm />);});
+  const commits = jest.fn();
+  await act(async () => {tree = renderer.create(<React.Profiler id="form" onRender={commits}><TruckProfileForm /></React.Profiler>);});
   const press = async (title: string) => {await act(async () => {
     tree.root.findAllByType(Button).find(node => node.props.title === title)!.props.onPress();
   });};
   await press('Rigid truck — no trailer');
   const inputs = tree.root.findAllByType(TextInput);
+  const beforeTyping = commits.mock.calls.length;
   for (const [index, value] of ['Synthetic', '4.1148', '2.5908', '18.288', '36287.3896', '5'].entries()) {
     await act(async () => {
       // Multiple native change events before a React commit, then a full paste.
@@ -124,6 +126,7 @@ it('retains rapid edits and pasted decimal strings without controlling native te
       inputs[index]!.props.onChangeText(value);
     });
   }
+  expect(commits).toHaveBeenCalledTimes(beforeTyping);
   expect(tree.root.findAllByType(TextInput).every(node => node.props.value === undefined)).toBe(true);
   await press('Validate profile');
   const summary = 'Validated SI: height 4.1148 m; width 2.5908 m; length 18.288 m; mass 36287.3896 kg.';
