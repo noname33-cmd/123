@@ -38,3 +38,10 @@ Component test проверяет передачу координаты без �
 ### Native CI текущего оформления
 
 Code commit2d07d4d: checks и Android success в run39059689983; iOS build/shell success, persistence XCTest остановился после restore на reveal mass (field y57.3, ScrollView начинается y59). Test helper умел прокручивать только вниз. Reveal теперь выбирает направление по положению элемента относительно viewport; проверки точных значений и hittability не отключены. Повтор native CI необходим, результат будет зафиксирован в docs/audit.md. Это исправление тестовой навигации, не подтверждение успешного iOS persistence до нового прогона.
+
+
+### Итог native regression, 18 октября 2026
+
+CI https://github.com/noname33-cmd/123/actions/runs/39060768296 на code/test commit173ab48709a9d09ec5e2cf1072fd22e1ded0d19a полностью success: checks, Android APK/shell, iOS native build и2 XCTest/0failures212.358s. Persistence198.928s прошёл restore → full replacement → partial suffix replacement → same-app clipboard → revalidate/save/restart/restore → delete/restart/empty. Точная итоговая масса30000.123456125 сохранена и восстановлена. Подробности и digests в audit.
+
+Android/iOS evidence сверены SHA-256, screenshots просмотрены. iOS debug banner Connect to Metro частично закрывает верхний заголовок; успешный shell accessibility assertion не означает отсутствие визуального overlay. Clean/release presentation, физические устройства, Dynamic Type/screen readers и cross-app clipboard остаются непроверенными. Это не интеграция авторизации/навигации. Локальный API/Metro/Android стенд работает. Следующая отдельная задача — выбрать контракт авторизации и провайдера по официальной документации до хранения пользовательских данных на сервере.
