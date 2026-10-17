@@ -120,6 +120,24 @@ final class FoundationSmokeTests: XCTestCase {
     mass.typeText("30000.123456789")
     let edited = expectation(for: NSPredicate(format: "value == %@", "30000.123456789"), evaluatedWith: mass)
     wait(for: [edited], timeout: 5)
+
+    // The caret is at the end after typing. Replace only the final three digits.
+    for _ in 0..<3 { mass.typeKey(XCUIKeyboardKey.leftArrow, modifierFlags: .shift) }
+    mass.typeText("125")
+    let partial = expectation(for: NSPredicate(format: "value == %@", "30000.123456125"), evaluatedWith: mass)
+    wait(for: [partial], timeout: 5)
+
+    // Exercise the system clipboard using UIKit keyboard commands, not a JS
+    // setter or typeText as a substitute for Paste. This stays within one app.
+    mass.typeKey("a", modifierFlags: .command)
+    mass.typeKey("c", modifierFlags: .command)
+    mass.typeText("1")
+    let temporary = expectation(for: NSPredicate(format: "value == %@", "1"), evaluatedWith: mass)
+    wait(for: [temporary], timeout: 5)
+    mass.typeKey("a", modifierFlags: .command)
+    mass.typeKey("v", modifierFlags: .command)
+    let pasted = expectation(for: NSPredicate(format: "value == %@", "30000.123456125"), evaluatedWith: mass)
+    wait(for: [pasted], timeout: 5)
     let invalidated = expectation(for: NSPredicate(format: "enabled == false"),
       evaluatedWith: app.buttons["Save profile on this device"])
     wait(for: [invalidated], timeout: 5)
@@ -127,7 +145,7 @@ final class FoundationSmokeTests: XCTestCase {
     XCTAssertFalse(app.staticTexts.matching(NSPredicate(format: "label == %@",
       "Validated SI: height 4.1148 m; width 2.5908 m; length 18.288 m; mass 36287.3896 kg.")).firstMatch.exists)
     tap("Validate profile", in: app)
-    expectMessage("Validated SI: height 4.1148 m; width 2.5908 m; length 18.288 m; mass 30000.123456789 kg.", in: app)
+    expectMessage("Validated SI: height 4.1148 m; width 2.5908 m; length 18.288 m; mass 30000.123456125 kg.", in: app)
     tap("Save profile on this device", in: app)
     expectMessage("Validated snapshot saved on this device.", in: app)
     app.terminate()
@@ -135,9 +153,9 @@ final class FoundationSmokeTests: XCTestCase {
     XCTAssertTrue(app.staticTexts["Truck Route & Savings"].waitForExistence(timeout: 60))
     tap("Restore saved profile", in: app)
     expectMessage("Saved profile restored in m/kg.", in: app)
-    expectMessage("Validated SI: height 4.1148 m; width 2.5908 m; length 18.288 m; mass 30000.123456789 kg.", in: app)
+    expectMessage("Validated SI: height 4.1148 m; width 2.5908 m; length 18.288 m; mass 30000.123456125 kg.", in: app)
     let replaced = XCTAttachment(screenshot: app.screenshot())
-    replaced.name = "profile-replaced"
+    replaced.name = "profile-pasted"
     replaced.lifetime = .keepAlways
     add(replaced)
     tap("Delete saved profile", in: app)

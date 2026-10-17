@@ -90,15 +90,17 @@ it('keeps the saved snapshot unchanged after invalid edits and persists an exact
     tree.root.findAllByType(TextInput).find(node => node.props.accessibilityLabel === 'Current gross mass (kg)')!.props.onChangeText(text);
   });};
   await press('Restore saved profile');
-  await editMass('0');
-  expect(button('Save profile on this device').props.disabled).toBe(true);
-  await press('Save profile on this device');
-  await press('Validate profile');
-  expect(button('Save profile on this device').props.disabled).toBe(true);
-  await press('Save profile on this device');
-  expect(port.setItem).not.toHaveBeenCalled();
-  expect(raw).toBe(original);
-  await press('Restore saved profile');
+  for (const invalid of ['0', '30,000.123456125', '']) {
+    await editMass(invalid);
+    expect(button('Save profile on this device').props.disabled).toBe(true);
+    await press('Save profile on this device');
+    await press('Validate profile');
+    expect(button('Save profile on this device').props.disabled).toBe(true);
+    await press('Save profile on this device');
+    expect(port.setItem).not.toHaveBeenCalled();
+    expect(raw).toBe(original);
+    await press('Restore saved profile');
+  }
   await editMass('30000.123456789');
   expect(button('Save profile on this device').props.disabled).toBe(true);
   await press('Validate profile');
