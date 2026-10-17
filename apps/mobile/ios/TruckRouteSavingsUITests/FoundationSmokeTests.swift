@@ -87,7 +87,16 @@ final class FoundationSmokeTests: XCTestCase {
       let field = app.textFields[label].firstMatch
       reveal(field, in: app)
       field.tap()
-      field.typeText(value)
+      // Controlled RN inputs update asynchronously. Do not send the next key
+      // until the previous value is observable; verify the complete fixture.
+      var entered = ""
+      for character in value {
+        field.typeText(String(character))
+        entered.append(character)
+        let updated = expectation(for: NSPredicate(format: "value == %@", entered), evaluatedWith: field)
+        wait(for: [updated], timeout: 5)
+      }
+      XCTAssertEqual(field.value as? String, value)
     }
     tap("Validate profile", in: app)
     expectMessage("Profile format is valid. Road legality is not verified.", in: app)

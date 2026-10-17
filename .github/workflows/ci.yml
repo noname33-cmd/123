@@ -95,7 +95,7 @@ jobs:
           target: default
           arch: x86_64
           profile: pixel_6
-          ram-size: 2048M
+          ram-size: 4096M
           emulator-port: 5554
           emulator-options: -no-window -gpu software -no-snapshot -noaudio -no-boot-anim
           script: ANDROID_SERIAL=emulator-5554 ANDROID_APK_PATH="$GITHUB_WORKSPACE/apps/mobile/android/app/build/outputs/apk/debug/app-debug.apk" pnpm test:android
