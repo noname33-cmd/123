@@ -1,5 +1,6 @@
 import React, {useRef, useState} from 'react';
-import {Button, Platform, StyleSheet, Text, TextInput, View, type TextInputProps} from 'react-native';
+import {Button, StyleSheet, Text, View} from 'react-native';
+import {ProfileInput, type ProfileInputProps} from './ProfileInput';
 import {parseTruckProfile, feetToMeters, inchesToMeters, poundsToKilograms, feetAndInchesToMeters,
   type TruckProfile, type VehicleType} from '@truck/truck-profile';
 import {type TruckProfileStore} from './storage/TruckProfileStore';
@@ -24,11 +25,11 @@ const emptyInches = {overallHeightMeters: '', overallWidthMeters: '', overallLen
 type Dimension = keyof typeof emptyInches;
 function isDimension(field: Field): field is Dimension {return Object.hasOwn(emptyInches, field);}
 
-function DraftInput({initialValue, ...props}: Omit<TextInputProps, 'value' | 'defaultValue'> & {initialValue: string}) {
+function DraftInput({initialValue, ...props}: Omit<ProfileInputProps, 'defaultValue'> & {initialValue: string}) {
   // Seed once per editing session. Never echo delayed JS text over native typing.
   // The parent remounts inputs only on unit changes and explicit Restore.
   const [seed] = useState(initialValue);
-  return <TextInput {...props} defaultValue={seed} />;
+  return <ProfileInput {...props} defaultValue={seed} />;
 }
 
 export function TruckProfileForm({store}: {store?: TruckProfileStore}) {
@@ -145,6 +146,5 @@ export function TruckProfileForm({store}: {store?: TruckProfileStore}) {
 const styles = StyleSheet.create({
   form: {gap: 12, marginTop: 24}, heading: {fontSize: 22, fontWeight: '600'},
   choice: {marginVertical: 4}, field: {gap: 4},
-  input: {borderWidth: 1, borderColor: '#64748b', borderRadius: 8, padding: 12,
-    ...Platform.select({android: {color: '#102535'}})},
+  input: {borderWidth: 1, borderColor: '#64748b', borderRadius: 8, padding: 12, color: '#102535'},
 });

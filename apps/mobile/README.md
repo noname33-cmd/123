@@ -46,3 +46,7 @@ bash gradlew resolveDependencyLocks --write-locks -PreactNativeArchitectures=x86
 ## Editing session behavior
 
 TruckProfileForm использует исходное defaultValue на сессию поля и получает onChangeText для валидации, без обратной записи value при каждом символе. Черновики хранятся в refs: обычный ввод не инициирует React commits всей формы, показанные ошибки/валидация снимаются только при необходимости. Смена единиц и явный Restore пересоздают поля с нужным draft; Delete текущий draft сохраняет. Это устраняет обратную синхронизацию JS text во время редактирования. XCTest вводит всю строку одним typeText без ожидания между символами и проверяет полное значение до сохранения; native результат текущего изменения фиксируется в docs/audit.md. Системный paste/IME и физические устройства отдельно не покрыты.
+
+### iOS input adapter
+
+Профиль зависит от контракта ProfileInput: Android использует RN TextInput; iOS — собственный UIKit UITextField через RCTViewManager interoperability. Native input хранит editing buffer и получает начальный текст один раз на keyed session, отдаёт точную строку через onTextChange и поддерживает editing lock/label/text-integer-decimal keyboard. JS не переписывает text/selection. Для обновления iOS нужен native rebuild; прежний binary не содержит TRSProfileInput. Native результаты новой реализации и ограничения — в docs/audit.md. Legacy interop требует повторной проверки при обновлении RN; UIKit adapter не является полным заменителем всех TextInput API.
