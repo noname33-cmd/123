@@ -10,7 +10,7 @@ Android debug APK для x86_64 и arm64-v8a собраны, подписи и m
 
 ## iOS launch/UI smoke
 
-FoundationSmokeTests включает также native storage сценарий Save → terminate/launch → Restore → Delete → terminate/launch → empty, с проверкой точных SI значений. Запускайте на отдельном disposable Simulator: тест сначала проверяет отсутствие сохранённого профиля и отказывается перезаписывать существующий. Синтетическая запись удаляется в конце успешного теста; при failure она может остаться для диагностики. keyboardDismissMode on-drag позволяет прокручивать форму поверх numeric keyboard. Новый сценарий требует фактического macOS CI прогона; старые CI результаты ниже относятся к предыдущему shell.
+FoundationSmokeTests включает также native storage сценарий Save → terminate/launch → Restore → Delete → terminate/launch → empty, с проверкой точных SI значений. Запускайте на отдельном disposable Simulator: тест сначала проверяет отсутствие сохранённого профиля и отказывается перезаписывать существующий. Синтетическая запись удаляется в конце успешного теста; при failure она может остаться для диагностики. keyboardDismissMode on-drag позволяет прокручивать форму поверх numeric keyboard. Сценарий подтверждён [CI run 39023269817](https://github.com/noname33-cmd/123/actions/runs/39023269817) на commit 935ce045b80ed4c9621e2360955f588f2719ee0c: deployment pod install, native build и 2 XCTest прошли (0 failures, 159.7 секунды). Screenshot восстановленного профиля визуально проверен. Ввод теста посимвольный с ожиданием value; быстрый ввод/автокоррекция остаются отдельной проверкой. Старые CI результаты ниже относятся к предыдущему shell.
 
 После frozen install, navigation build и `bundle exec pod install --deployment` на macOS задайте UDID отдельного iOS Simulator:
 
