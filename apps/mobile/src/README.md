@@ -33,3 +33,8 @@ Component test проверяет передачу координаты без �
 
 
 На окончательном focus-scroll коде повторён полный Android numeric сценарий: все6 точных полей, SI summary, Save enabled после Validate и disabled после дописывания9 к массе. Snapshot writes не выполнялись. Unit23/typecheck/lint/обе JS-сборки success. Нативные APK/Xcode/CI остаются непроверенными.
+
+
+### Native CI текущего оформления
+
+Code commit2d07d4d: checks и Android success в run39059689983; iOS build/shell success, persistence XCTest остановился после restore на reveal mass (field y57.3, ScrollView начинается y59). Test helper умел прокручивать только вниз. Reveal теперь выбирает направление по положению элемента относительно viewport; проверки точных значений и hittability не отключены. Повтор native CI необходим, результат будет зафиксирован в docs/audit.md. Это исправление тестовой навигации, не подтверждение успешного iOS persistence до нового прогона.

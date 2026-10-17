@@ -44,9 +44,13 @@ final class FoundationSmokeTests: XCTestCase {
     for _ in 0..<20 {
       if element.exists && !element.frame.isEmpty && app.frame.contains(element.frame) &&
           (!interactive || element.isHittable) { return }
-      // Drag above the numeric keyboard; ScrollView dismisses it on drag.
-      let from = app.coordinate(withNormalizedOffset: CGVector(dx: 0.85, dy: 0.48))
-      let to = app.coordinate(withNormalizedOffset: CGVector(dx: 0.85, dy: 0.20))
+      // Restoring or reading a message may leave the next control above the viewport.
+      // Keep the gesture above the numeric keyboard; drag dismisses it.
+      let scroll = app.scrollViews.firstMatch
+      let viewport = scroll.exists ? scroll.frame.intersection(app.frame) : app.frame
+      let isAbove = element.exists && !element.frame.isEmpty && element.frame.minY < viewport.minY + 8
+      let from = app.coordinate(withNormalizedOffset: CGVector(dx: 0.85, dy: isAbove ? 0.20 : 0.48))
+      let to = app.coordinate(withNormalizedOffset: CGVector(dx: 0.85, dy: isAbove ? 0.48 : 0.20))
       from.press(forDuration: 0.1, thenDragTo: to)
     }
     XCTAssertTrue(element.exists && !element.frame.isEmpty && app.frame.contains(element.frame) &&
