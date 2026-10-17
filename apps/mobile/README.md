@@ -57,3 +57,5 @@ TruckProfileForm использует исходное defaultValue на сес�
 ### Revalidating an edited snapshot
 
 Persistence XCTest дополнительно заменяет всю выделенную массу восстановленного профиля через Command-A и ввод целой строки, проверяет блокировку Save до Validate, сохраняет новую точную массу 30000.123456789 kg и восстанавливает её после restart. Результаты актуального native прогона — в docs/audit.md; системный clipboard paste и частичное выделение этим сценарием не проверяются. Компонентный тест отдельно проверяет, что invalid replacement не меняет прежний JSON snapshot.
+
+Результат этой задачи: [CI run 39029700776](https://github.com/noname33-cmd/123/actions/runs/39029700776), commit ff847dfef5c2d371b84d64c22662bba407df1f9a — checks/Android/iOS success. Whole-selection replacement через Command-A, блокировка Save до Validate, повторное сохранение и восстановление массы30000.123456789 kg прошли на iPhone16/iOS18.5/Xcode16.4. Всего2 XCTest/0 failures/109.395s. Screenshot profile-replaced просмотрен: native поле и SI summary содержат все дробные знаки. Изменять код приложения по этому результату не потребовалось.
