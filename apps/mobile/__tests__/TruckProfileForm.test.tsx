@@ -25,7 +25,7 @@ for (const type of ['Rigid truck — no trailer', 'Tractor + one semitrailer']) 
     await press('Validate profile'); expect(labels()).toContain(expected);
     await press('Use m/kg'); expect(labels()).not.toContain(expected);
     await press('Use ft+in/lb');
-    expect(tree.root.findAllByType(TextInput).find(node => node.props.accessibilityLabel === 'Overall height (in)')!.props.value).toBe('6');
+    expect(tree.root.findAllByType(TextInput).find(node => node.props.accessibilityLabel === 'Overall height (in)')!.props.defaultValue).toBe('6');
     for (const invalid of ['', '12', '-1', '6,5']) {
       await edit('Overall height (in)', invalid);
       await press('Validate profile');
@@ -91,9 +91,9 @@ for (const type of ['Rigid truck — no trailer', 'Tractor + one semitrailer']) 
       expect(labels()).toContain(expected);
       await press('Use m/kg');
       expect(labels()).not.toContain(expected);
-      expect(tree.root.findAllByType(TextInput)[1]!.props.value).toBe('');
+      expect(tree.root.findAllByType(TextInput)[1]!.props.defaultValue).toBe('');
       await press(`Use ${mode}`);
-      expect(tree.root.findAllByType(TextInput)[1]!.props.value).toBe(dimensions[0]);
+      expect(tree.root.findAllByType(TextInput)[1]!.props.defaultValue).toBe(dimensions[0]);
       await edit(1, '13 ft 6 in');
       await press('Validate profile');
       expect(labels()).not.toContain(expected);
@@ -106,3 +106,31 @@ for (const type of ['Rigid truck — no trailer', 'Tractor + one semitrailer']) 
     });
   }
 }
+
+it('retains rapid edits and pasted decimal strings without controlling native text', async () => {
+  let tree!: ReactTestRenderer;
+  await act(async () => {tree = renderer.create(<TruckProfileForm />);});
+  const press = async (title: string) => {await act(async () => {
+    tree.root.findAllByType(Button).find(node => node.props.title === title)!.props.onPress();
+  });};
+  await press('Rigid truck — no trailer');
+  const inputs = tree.root.findAllByType(TextInput);
+  for (const [index, value] of ['Synthetic', '4.1148', '2.5908', '18.288', '36287.3896', '5'].entries()) {
+    await act(async () => {
+      // Multiple native change events before a React commit, then a full paste.
+      for (let length = 1; length <= value.length; length++) {
+        inputs[index]!.props.onChangeText(value.slice(0, length));
+      }
+      inputs[index]!.props.onChangeText(value);
+    });
+  }
+  expect(tree.root.findAllByType(TextInput).every(node => node.props.value === undefined)).toBe(true);
+  await press('Validate profile');
+  const summary = 'Validated SI: height 4.1148 m; width 2.5908 m; length 18.288 m; mass 36287.3896 kg.';
+  expect(tree.root.findAllByType(Text).map(node => node.props.children)).toContain(summary);
+  await press('Use ft/lb'); await press('Use m/kg');
+  expect(tree.root.findAllByType(TextInput).map(node => node.props.defaultValue)).toEqual([
+    'Synthetic', '4.1148', '2.5908', '18.288', '36287.3896', '5',
+  ]);
+  await act(async () => {tree.unmount();});
+});

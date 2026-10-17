@@ -1,5 +1,5 @@
 import React, {useState} from 'react';
-import {Button, StyleSheet, Text, TextInput, View} from 'react-native';
+import {Button, StyleSheet, Text, TextInput, View, type TextInputProps} from 'react-native';
 import {parseTruckProfile, feetToMeters, inchesToMeters, poundsToKilograms, feetAndInchesToMeters,
   type TruckProfile, type VehicleType} from '@truck/truck-profile';
 import {type TruckProfileStore} from './storage/TruckProfileStore';
@@ -24,6 +24,13 @@ const emptyInches = {overallHeightMeters: '', overallWidthMeters: '', overallLen
 type Dimension = keyof typeof emptyInches;
 function isDimension(field: Field): field is Dimension {return Object.hasOwn(emptyInches, field);}
 
+function DraftInput({initialValue, ...props}: Omit<TextInputProps, 'value' | 'defaultValue'> & {initialValue: string}) {
+  // Seed once per editing session. Never echo delayed JS text over native typing.
+  // The parent remounts inputs only on unit changes and explicit Restore.
+  const [seed] = useState(initialValue);
+  return <TextInput {...props} defaultValue={seed} />;
+}
+
 export function TruckProfileForm({store}: {store?: TruckProfileStore}) {
   const [storageBusy, setStorageBusy] = useState(false);
   const [vehicleType, setVehicleType] = useState<VehicleType>();
@@ -32,6 +39,7 @@ export function TruckProfileForm({store}: {store?: TruckProfileStore}) {
     'm/kg': {...empty}, 'ft/lb': {...empty}, 'in/lb': {...empty}, 'ft+in/lb': {...empty},
   });
   const [inches, setInches] = useState({...emptyInches});
+  const [restoreRevision, setRestoreRevision] = useState(0);
   const values = drafts[mode];
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [validated, setValidated] = useState<TruckProfile>();
@@ -92,9 +100,9 @@ export function TruckProfileForm({store}: {store?: TruckProfileStore}) {
     {fields.map(([field, siLabel]) => {
       const label = siLabel.replace('(m)', `(${mode === 'ft+in/lb' ? 'ft' : mode.split('/')[0]})`)
         .replace('(kg)', `(${mode.split('/')[1]})`);
-      return <View key={field} style={styles.field}>
+      return <View key={`${mode}:${restoreRevision}:${field}`} style={styles.field}>
       <Text>{label}</Text>
-      <TextInput accessibilityLabel={label} value={values[field]}
+      <DraftInput accessibilityLabel={label} initialValue={values[field]}
         editable={!storageBusy}
         keyboardType={field === 'name' ? 'default' : field === 'totalAxleCount' ||
           (mode === 'ft+in/lb' && isDimension(field)) ? 'number-pad' : 'decimal-pad'}
@@ -104,7 +112,7 @@ export function TruckProfileForm({store}: {store?: TruckProfileStore}) {
         }} />
       {mode === 'ft+in/lb' && isDimension(field) ? <View>
         <Text>{siLabel.replace('(m)', '(in)')}</Text>
-        <TextInput accessibilityLabel={siLabel.replace('(m)', '(in)')} value={inches[field]}
+        <DraftInput accessibilityLabel={siLabel.replace('(m)', '(in)')} initialValue={inches[field]}
           editable={!storageBusy}
           keyboardType="decimal-pad" style={styles.input} onChangeText={text => {
             setInches(previous => ({...previous, [field]: text}));
@@ -121,6 +129,7 @@ export function TruckProfileForm({store}: {store?: TruckProfileStore}) {
     </View> : null}
     {store ? <ProfilePersistence profile={validated} store={store} onBusyChange={setStorageBusy}
       onRestore={profile => {
+        setRestoreRevision(previous => previous + 1);
         setVehicleType(profile.vehicleType); setMode('m/kg'); setErrors({});
         setDrafts(previous => ({...previous, 'm/kg': {
           name: profile.name, overallHeightMeters: profile.overallHeightMeters,

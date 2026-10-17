@@ -24,14 +24,20 @@ it('restores SI fields and vehicle type, revalidates edits, and deletes only the
   expect(button('Save profile on this device').props.disabled).toBe(true);
   await press('Restore saved profile');
   expect(button('Tractor + one semitrailer').props.accessibilityState.selected).toBe(true);
-  expect(tree.root.findAllByType(TextInput)[1]!.props.value).toBe('4.1148');
+  expect(tree.root.findAllByType(TextInput)[1]!.props.defaultValue).toBe('4.1148');
+  // Restore in the same unit mode must also replace an edited native session.
+  await act(async () => {tree.root.findAllByType(TextInput)[1]!.props.onChangeText('9.999');});
+  await press('Restore saved profile');
+  expect(tree.root.findAllByType(TextInput)[1]!.props.defaultValue).toBe('4.1148');
   expect(tree.root.findAllByType(Text).some(node => node.props.children === 'Saved profile restored in m/kg.')).toBe(true);
   await act(async () => {tree.root.findAllByType(TextInput)[0]!.props.onChangeText('Changed');});
   expect(button('Save profile on this device').props.disabled).toBe(true);
   await press('Validate profile'); await press('Save profile on this device');
   expect(JSON.parse(raw!).profile.name).toBe('Changed');
   await press('Delete saved profile'); expect(raw).toBe(null);
-  expect(tree.root.findAllByType(TextInput)[0]!.props.value).toBe('Changed');
+  // A unit round trip remounts native inputs from the retained draft.
+  await press('Use ft/lb'); await press('Use m/kg');
+  expect(tree.root.findAllByType(TextInput)[0]!.props.defaultValue).toBe('Changed');
   await act(async () => {tree.unmount();});
 });
 
