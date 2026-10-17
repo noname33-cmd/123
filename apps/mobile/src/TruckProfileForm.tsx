@@ -1,5 +1,7 @@
 import React, {useRef, useState} from 'react';
-import {Button, StyleSheet, Text, View} from 'react-native';
+import {StyleSheet, Text, View} from 'react-native';
+import {ActionButton as Button} from './ActionButton';
+import {colors} from './theme';
 import {ProfileInput, type ProfileInputProps} from './ProfileInput';
 import {parseTruckProfile, feetToMeters, inchesToMeters, poundsToKilograms, feetAndInchesToMeters,
   type TruckProfile, type VehicleType} from '@truck/truck-profile';
@@ -32,7 +34,7 @@ function DraftInput({initialValue, ...props}: Omit<ProfileInputProps, 'defaultVa
   return <ProfileInput {...props} defaultValue={seed} />;
 }
 
-export function TruckProfileForm({store}: {store?: TruckProfileStore}) {
+export function TruckProfileForm({store, onInputFocus}: {store?: TruckProfileStore; onInputFocus?: (windowY: number) => void}) {
   const [storageBusy, setStorageBusy] = useState(false);
   const [vehicleType, setVehicleType] = useState<VehicleType>();
   const [mode, setMode] = useState<Mode>('m/kg');
@@ -80,7 +82,7 @@ export function TruckProfileForm({store}: {store?: TruckProfileStore}) {
   }
   return <View style={styles.form}>
     <Text style={styles.heading}>Truck profile</Text>
-    <Text>Choose your vehicle. Enter the whole vehicle or combination, including cargo.</Text>
+    <Text style={styles.body}>Choose your vehicle. Enter the whole vehicle or combination, including cargo.</Text>
     {(['rigid-truck', 'tractor-semitrailer'] as const).map(type =>
       <View key={type} style={styles.choice}>
         <Button title={type === 'rigid-truck' ? 'Rigid truck — no trailer' : 'Tractor + one semitrailer'}
@@ -88,22 +90,22 @@ export function TruckProfileForm({store}: {store?: TruckProfileStore}) {
           accessibilityState={{selected: vehicleType === type}}
           onPress={() => {setVehicleType(type); setValidated(undefined); setErrors({});}} />
       </View>)}
-    <Text>Selected: {vehicleType === 'rigid-truck' ? 'Rigid truck' :
+    <Text style={styles.body}>Selected: {vehicleType === 'rigid-truck' ? 'Rigid truck' :
       vehicleType === 'tractor-semitrailer' ? 'Tractor + one semitrailer' : 'None'}</Text>
-    {errors.vehicleType ? <Text accessibilityRole="alert">{errors.vehicleType}</Text> : null}
-    <Text>Input units: {mode}</Text>
+    {errors.vehicleType ? <Text style={[styles.feedback, styles.error]} accessibilityRole="alert">{errors.vehicleType}</Text> : null}
+    <Text style={styles.body}>Input units: {mode}</Text>
     {modes.map(unitMode => <Button key={unitMode} title={`Use ${unitMode}`}
       disabled={storageBusy}
       accessibilityState={{selected: mode === unitMode}} onPress={() => {
         setMode(unitMode); setValidated(undefined); setErrors({});
       }} />)}
-    <Text>Each unit mode keeps a separate draft. In ft+in mode, enter both fields, using 0 when needed.</Text>
+    <Text style={styles.body}>Each unit mode keeps a separate draft. In ft+in mode, enter both fields, using 0 when needed.</Text>
     {fields.map(([field, siLabel]) => {
       const label = siLabel.replace('(m)', `(${mode === 'ft+in/lb' ? 'ft' : mode.split('/')[0]})`)
         .replace('(kg)', `(${mode.split('/')[1]})`);
       return <View key={`${mode}:${restoreRevision}:${field}`} style={styles.field}>
-      <Text>{label}</Text>
-      <DraftInput accessibilityLabel={label} initialValue={values[field]}
+      <Text style={styles.label}>{label}</Text>
+      <DraftInput onInputFocus={onInputFocus} accessibilityLabel={label} initialValue={values[field]}
         editable={!storageBusy}
         keyboardType={field === 'name' ? 'default' : field === 'totalAxleCount' ||
           (mode === 'ft+in/lb' && isDimension(field)) ? 'number-pad' : 'decimal-pad'}
@@ -113,8 +115,8 @@ export function TruckProfileForm({store}: {store?: TruckProfileStore}) {
           if (Object.keys(errors).length) {setErrors({});}
         }} />
       {mode === 'ft+in/lb' && isDimension(field) ? <View>
-        <Text>{siLabel.replace('(m)', '(in)')}</Text>
-        <DraftInput accessibilityLabel={siLabel.replace('(m)', '(in)')} initialValue={inches.current[field]}
+        <Text style={styles.body}>{siLabel.replace('(m)', '(in)')}</Text>
+        <DraftInput onInputFocus={onInputFocus} accessibilityLabel={siLabel.replace('(m)', '(in)')} initialValue={inches.current[field]}
           editable={!storageBusy}
           keyboardType="decimal-pad" style={styles.input} onChangeText={text => {
             inches.current[field] = text;
@@ -122,13 +124,13 @@ export function TruckProfileForm({store}: {store?: TruckProfileStore}) {
             if (Object.keys(errors).length) {setErrors({});}
           }} />
       </View> : null}
-      {errors[field] ? <Text accessibilityRole="alert">{errors[field]}</Text> : null}
+      {errors[field] ? <Text style={[styles.feedback, styles.error]} accessibilityRole="alert">{errors[field]}</Text> : null}
     </View>;})}
-    <Text>Mass includes cargo, fuel and people. Count all installed axles, including lift axles.</Text>
-    <Button title="Validate profile" disabled={storageBusy} onPress={validate} />
+    <Text style={styles.body}>Mass includes cargo, fuel and people. Count all installed axles, including lift axles.</Text>
+    <Button variant="primary" title="Validate profile" disabled={storageBusy} onPress={validate} />
     {validated ? <View>
-      <Text accessibilityRole="alert">Profile format is valid. Road legality is not verified.</Text>
-      <Text>{`Validated SI: height ${validated.overallHeightMeters} m; width ${validated.overallWidthMeters} m; length ${validated.overallLengthMeters} m; mass ${validated.currentGrossMassKilograms} kg.`}</Text>
+      <Text style={styles.feedback} accessibilityRole="alert">Profile format is valid. Road legality is not verified.</Text>
+      <Text style={styles.body}>{`Validated SI: height ${validated.overallHeightMeters} m; width ${validated.overallWidthMeters} m; length ${validated.overallLengthMeters} m; mass ${validated.currentGrossMassKilograms} kg.`}</Text>
     </View> : null}
     {store ? <ProfilePersistence profile={validated} store={store} onBusyChange={setStorageBusy}
       onRestore={profile => {
@@ -144,7 +146,14 @@ export function TruckProfileForm({store}: {store?: TruckProfileStore}) {
   </View>;
 }
 const styles = StyleSheet.create({
-  form: {gap: 12, marginTop: 24}, heading: {fontSize: 22, fontWeight: '600'},
-  choice: {marginVertical: 4}, field: {gap: 4},
-  input: {borderWidth: 1, borderColor: '#64748b', borderRadius: 8, padding: 12, color: '#102535'},
+  form: {gap: 12, padding: 18, borderRadius: 18, backgroundColor: colors.paper,
+    borderWidth: 1, borderColor: colors.line},
+  heading: {fontSize: 24, fontWeight: '700', color: colors.ink},
+  body: {fontSize: 13, lineHeight: 20, color: colors.muted},
+  label: {fontSize: 13, fontWeight: '600', color: colors.ink},
+  feedback: {fontSize: 13, lineHeight: 20, color: colors.ink, backgroundColor: colors.soft, padding: 10},
+  error: {color: colors.error, backgroundColor: colors.errorSurface},
+  choice: {marginVertical: 2}, field: {gap: 6, marginVertical: 4},
+  input: {minHeight: 48, borderWidth: 1, borderColor: colors.line, borderRadius: 10,
+    padding: 12, color: colors.ink, backgroundColor: colors.paper, fontSize: 16},
 });

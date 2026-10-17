@@ -1,5 +1,7 @@
 import React, {useEffect, useRef, useState} from 'react';
-import {Button, Text, View} from 'react-native';
+import {StyleSheet, Text, View} from 'react-native';
+import {ActionButton as Button} from './ActionButton';
+import {colors} from './theme';
 import {type TruckProfile} from '@truck/truck-profile';
 import {type TruckProfileStore} from './storage/TruckProfileStore';
 
@@ -43,12 +45,18 @@ export function ProfilePersistence({profile, store, onRestore, onBusyChange}: Pr
     }
     if (mounted.current) {setMessage(text);}
   }
-  return <View>
-    <Text>One profile on this device. Saving replaces the previous snapshot. Unsaved drafts remain in memory.</Text>
-    <Text>Restore replaces the m/kg draft with the saved profile. Other unit drafts stay in memory.</Text>
-    <Button title="Save profile on this device" disabled={busy || !profile} onPress={() => {void perform('save');}} />
+  return <View style={styles.section}>
+    <Text style={styles.note}>One profile on this device. Saving replaces the previous snapshot. Unsaved drafts remain in memory.</Text>
+    <Text style={styles.note}>Restore replaces the m/kg draft with the saved profile. Other unit drafts stay in memory.</Text>
+    <Button variant="primary" title="Save profile on this device" disabled={busy || !profile} onPress={() => {void perform('save');}} />
     <Button title="Restore saved profile" disabled={busy} onPress={() => {void perform('restore');}} />
     <Button title="Delete saved profile" disabled={busy} onPress={() => {void perform('delete');}} />
-    {message ? <Text accessibilityRole="alert">{message}</Text> : null}
+    {message ? <Text style={styles.message} accessibilityRole="alert">{message}</Text> : null}
   </View>;
 }
+
+const styles = StyleSheet.create({
+  section: {gap: 10, borderTopWidth: 1, borderTopColor: colors.line, paddingTop: 18, marginTop: 8},
+  note: {fontSize: 12, lineHeight: 18, color: colors.muted},
+  message: {fontSize: 13, lineHeight: 20, color: colors.ink, backgroundColor: colors.soft, padding: 12, borderRadius: 10},
+});

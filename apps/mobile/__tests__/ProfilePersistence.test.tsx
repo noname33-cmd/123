@@ -1,5 +1,6 @@
 import React from 'react';
-import {Button, Text, TextInput} from 'react-native';
+import {Text, TextInput} from 'react-native';
+import {ActionButton as Button} from '../src/ActionButton';
 import renderer, {act, type ReactTestRenderer} from 'react-test-renderer';
 import {parseTruckProfile} from '@truck/truck-profile';
 import {ProfilePersistence} from '../src/ProfilePersistence';

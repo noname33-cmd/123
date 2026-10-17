@@ -1,5 +1,6 @@
 import React from 'react';
-import {Button, Text, TextInput} from 'react-native';
+import {Text, TextInput} from 'react-native';
+import {ActionButton as Button} from '../src/ActionButton';
 import renderer, {act, type ReactTestRenderer} from 'react-test-renderer';
 import {TruckProfileForm} from '../src/TruckProfileForm';
 
@@ -135,5 +136,20 @@ it('retains rapid edits and pasted decimal strings without controlling native te
   expect(tree.root.findAllByType(TextInput).map(node => node.props.defaultValue)).toEqual([
     'Synthetic', '4.1148', '2.5908', '18.288', '36287.3896', '5',
   ]);
+  await act(async () => {tree.unmount();});
+});
+
+
+it('forwards native focus position without validating or changing draft text', async () => {
+  const onInputFocus = jest.fn();
+  let tree!: ReactTestRenderer;
+  await act(async () => {tree = renderer.create(<TruckProfileForm onInputFocus={onInputFocus} />);});
+  const {ProfileInput} = require('../src/ProfileInput.tsx');
+  const input = tree.root.findAllByType(ProfileInput)[0]!;
+  await act(async () => {input.props.onInputFocus(240);});
+  expect(onInputFocus).toHaveBeenCalledWith(240);
+  expect(tree.root.findAllByType(TextInput)[0]!.props.defaultValue).toBe('');
+  expect(tree.root.findAllByType(Text).some(node => node.props.children ===
+    'Profile format is valid. Road legality is not verified.')).toBe(false);
   await act(async () => {tree.unmount();});
 });

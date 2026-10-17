@@ -638,3 +638,70 @@ Native итог run39030732736: Android и iOS success. iOS artifact12100622271 
 Файлы этой задачи: apps/mobile/ios/TruckRouteSavingsUITests/FoundationSmokeTests.swift; apps/mobile/__tests__/ProfilePersistence.test.tsx; apps/mobile/README.md; docs/audit.md. Production код не менялся; ошибок в проверенном native сценарии не обнаружено. Итоговый документационный commit с [skip ci] меняет только README/audit; native и JS результаты относятся к code commit7772a6c.
 
 Не выполнены/границы: Paste через экранное меню, cross-app clipboard и privacy prompts, произвольная/срединная selection (проверен suffix3), сторонние keyboard/IME/диктовка/VoiceOver/dark-mode, physical devices/другие OS/release. Invalid comma/empty/zero проверены на компонентной границе, не native clipboard. Same-app keyboard clipboard success не доказывает эти случаи. Legacy interop требует контроля при RN upgrade; первый CI Docker сбой остаётся наблюдением с неизвестной причиной. Следующий ограниченный шаг — экранное меню Paste/вставка из другого приложения с явной проверкой системных разрешений; дальнейшие доменные функции отдельно. Локальный stand оставлен работающим; тестовые native snapshots удалены, CI disposable Simulator удалён workflow.
+
+
+## 2026-10-17 — Design 01: визуальный прототип
+
+База e6c822f706180029474d66118f5ddc8bc49e4752, рабочее дерево до задачи чистое. Ограниченная задача: дизайн входа, главной и профиля; без production UI и auth integration. Файлы: docs/design/prototype.html, docs/design/README.md, docs/audit.md. Переиспользован существующий assets/brand/truck-route-savings-logo-v1.png.
+
+Создан HTML-прототип с English UI, navy/forest-green палитрой, двумя типами транспорта, фиксированными точными US/metric примерами и явными unavailable состояниями. Save демонстрирует только состояние, хранения/API нет. Вход readonly/disabled. Исправлена согласованность названия выбранного транспорта на главной. План следующего этапа и границы описаны в design README.
+
+Встроенный browser automation не запустился: failed to write kernel assets, os error 3. Проверка выполнена установленным Chrome через Playwright из bundled runtime, без установки пакетов. Локальный allowlist preview server 127.0.0.1:4186 обслуживает только прототип и логотип; исходники инструментов и screenshots находятся в ignored artifacts/design-preview.
+
+Выполнены: browser interaction checks (переходы, тип транспорта/карточка, US80000 и metric36287.3896, Validate/Save/уведомление, сброс доступности Save), readonly email/password, disabled Sign in, logo loaded, отсутствие JS page errors; горизонтальный overflow страницы отсутствует при 320/390/768/1440 px. Итог скрипта exit0. Визуально просмотрены overview.png и profile-mobile.png. Проверка readonly исправлена перед финальным повтором. Поля фиксированы: настоящий input/конвертация/доменная валидация этим тестом не проверяются.
+
+Не выполнены: native builds/tests и повтор CI (app source не изменён), физические устройства, screen readers, Dynamic Type, полный contrast audit, dark mode, реальные auth/маршруты/экономия. Проверка overflow страницы не доказывает видимость длинных значений внутри каждого поля. Следующий шаг — отдельный перенос темы/профиля в RN с соответствующими тестами; авторизация отдельным этапом до серверного хранения пользовательских данных.
+
+
+## 2026-10-17 — Design 01: тема и профиль React Native
+
+Перед изменениями прочитаны App, TruckProfileForm, ProfilePersistence, ProfileInput.ios, component tests и src README; AGENTS.md не найден. Предыдущие design docs сохранены. Ограниченная задача: перенос визуальной основы/профиля, без auth/главной/маршрутизации и изменения доменных контрактов.
+
+Изменены apps/mobile/App.tsx, src/TruckProfileForm.tsx, src/ProfilePersistence.tsx; добавлены src/theme.ts и src/ActionButton.tsx. Новые поверхности/цвета/типографика/Pressable кнопки с selected/disabled semantics. Сохранены все4режима, refs/remount keys, native input adapter, local storage/parser и текущие подписи automation. Тесты TruckProfileForm/ProfilePersistence используют новый компонент кнопки; добавлен ActionButton.test.tsx. Обновлён apps/mobile/src/README.md.
+
+Выполнены mobile typecheck, lint, test: 7 suites/22 tests success; build: Android и iOS JS bundles success. Первый прогон: новый ActionButton test не находил Pressable через findByType; исправлен поиск host accessibilityRole, финальный полный прогон успешен. Проверка нового компонента покрывает semantics/передачу обработчика, не физический disabled touch. Сборщик выдал только NO_COLOR/FORCE_COLOR warnings. Native binaries/CI не запускались. local status: API/Metro offline, emulator offline/booting, ownership отсутствует/изменилось, Docker status failed. Остановленные процессы не объявлены работающими; пользовательские данные не удалялись.
+
+Не проверены: внешний вид на устройстве, APK/Xcode builds, native regression, screen readers, Dynamic Type/клавиатура/перекрытия, физические устройства. JS build не подтверждает эти свойства. Нет новой авторизации/SDK/secrets; auth provider остаётся открытым выбором. Следующая задача: поднять локальную среду и проверить дизайн профиля на Android, затем native iOS в macOS CI перед заявлением о завершении native переноса. После этого отдельная auth задача по официальной документации.
+
+
+## 2026-10-17 — восстановление локального стенда и Android Design 01 QA
+
+Прочитаны README/local commands, scripts/local.cjs и verify-android.cjs, ignored config/state. План этой задачи: восстановить запуск и проверить актуальный RN экран; исходники приложения не менять, результаты добавить в этот audit.
+
+Причина Docker offline: Docker Desktop не запущен, named pipe dockerDesktopLinuxEngine отсутствовал. Запущен уже установленный Docker Desktop (скрытое окно); engine29.7.2 готов. Выполнены штатные local down/up, старые PID перепроверены helper; volumes не удалялись. PostGIS3.5 authenticated TCP/geography и Redis PING/write/read passed; Prisma generation, database/API/navigation/truck-profile compile, Metro warmup, emulator boot и Android shell smoke success. Актуальный JS загружен через Metro из текущего рабочего дерева; использован прежний установленный debug APK из ignored config, новой native сборки нет.
+
+Android emulator-5554, TruckFoundationApi35,1080x2400: heading/тема визуально проверены, выбор Rigid меняет Selected, Validate доступен прокруткой, пустая форма показывает ошибки, Save disabled. Снимки profile-top.png, validation-fields.png, bottom-final.png просмотрены; нижний снимок подтверждает видимость Save/Restore/Delete без перекрытия системной navigation bar. Сценарий не выполняет save/restore/delete и не изменяет сохранённый snapshot. Временный QA script/screenshots/XML в ignored artifacts/design-device; исходники не публикуются как полноценный E2E regression suite.
+
+Первый QA прогон искал Save сразу после Validate без дополнительной прокрутки и остановился; второй после force-stop считал XML до готовности JS и остановился на heading. Исправлены только ожидание heading и прокрутка; итоговый прогон exit0. Assertions не отключены. В emulator.log есть UpdateLayeredWindowIndirect warning Windows рамки; boot/UI checks прошли, корректность всех оконных режимов не заявляется.
+
+Финальный local status: API ready, Metro ready, api/metro/emulator/qemu ownership verified, Android booted, PostgreSQL/Redis healthy и loopback ports. Стенд оставлен запущенным. Файл этой итерации: docs/audit.md; локальные state/log/config/evidence ignored. Предыдущие незакоммиченные UI/design изменения сохранены.
+
+Не выполнены: новая APK/native iOS сборки, iOS device tests текущего оформления, physical devices, keyboard/увеличенный системный шрифт/screen readers, успешный save/restore flow на устройстве после редизайна, CI и полный JS повтор (production code в этой задаче не менялся). Риск: длинная форма требует прокрутки, ошибки пока используют ту же зелёную подложку, что и информационные сообщения; это требует отдельного UX уточнения. Следующий ограниченный этап — проверить keyboard/крупный шрифт и уточнить состояния ошибок, затем native iOS regression перед следующим auth этапом.
+
+
+## 2026-10-17 — Android keyboard/font QA и отдельное оформление ошибок
+
+Перед изменениями прочитаны form/theme, device helper, local status и AndroidManifest (adjustResize уже задан). Файлы этой итерации: apps/mobile/src/theme.ts, apps/mobile/src/TruckProfileForm.tsx, apps/mobile/src/README.md, docs/audit.md. Добавлен errorSurface #fff0ec, ошибки типа/полей используют #923e31 и эту подложку; success остаётся зелёным. Parser/native adapter/storage не менялись.
+
+Выполнены mobile22 tests/7 suites, typecheck/lint success на окончательном коде. При первом редактировании Python прочитал UTF-8 как Windows encoding и исказил em dash в Rigid title: component tests это обнаружили (5 failed), исправлено явным UTF-8, полный прогон22 passed. Снимок выявил неполное применение error style (только vehicleType), исправлены также field errors, тесты и device сценарий повторены.
+
+На emulator-5554/API35/1080x2400 font_scale изменён с1.0 на1.3: heading готов, поле Profile name достигнуто прокруткой, введено KeyboardCheck, текст присутствует в UI XML, видимость IME подтверждена dumpsys. Клавиатура закрыта Back, Validate/нижние действия достижимы, пустые числовые поля дают errors/Save disabled. Просмотрены large-font-keyboard.png и окончательный large-font-errors-bottom.png: поле имени над IME, ошибки красные, подписи и нижние действия читаемы. В каждом прогоне finally вернул font_scale1.0; snapshot save/restore/delete не вызывались. Evidence/helper в ignored artifacts/design-device.
+
+Промежуточные device failures: screencap превысил default Node buffer (ENOBUFS), увеличен до8MiB; затем XML содержал частично видимый input и tap попал в system navigation, сценарий проверял foreground неверно/текст не появился. Добавлена проверка видимых bounds перед tap; итоговые два прогона success, последний на окончательном field error style. Эти ошибки не выданы за product bugs и не скрыты. Нативные input callbacks/selection не менялись.
+
+Не выполнены: числовая IME/другие клавиатуры, действия при всё ещё открытой IME (проверены после Back), 200%/другие screen sizes, TalkBack/VoiceOver, iOS Dynamic Type/device tests, новые APK/Xcode build/CI, успешный save flow на устройстве в этой задаче. JS bundles повторно не собирались, актуальный JS проверен через Metro. Стенд оставлен запущенным; исходный системный масштаб восстановлен. Следующий этап — native regression текущего UI и подготовка выбора auth provider отдельной задачей, без добавления аккаунтов в текущую итерацию.
+
+
+## 2026-10-17 — Android exact numeric input и исправление перекрытия IME
+
+Прочитаны local status, form/input, device helpers. API/Metro/Android ready, ownership verified, PostGIS/Redis healthy. Исходный план — числовой QA и docs; после обнаружения перекрытия поля массы план расширен до исправления Android focus scroll (объявлено пользователю до edits). Файлы: apps/mobile/App.tsx, src/ProfileInput.tsx, src/TruckProfileForm.tsx, __tests__/TruckProfileForm.test.tsx, src/README.md, docs/audit.md. App.test.tsx временно менялся для пробного keyboard listener test; этот тест удалён вместе с отвергнутой реализацией.
+
+Первый device numeric сценарий (до исправления) проверил все6 inputs: NumericCheck,4.1148,2.5908,18.288,30000.123456789,5. Настоящая IME присутствовала; exact SI summary совпала, Save enabled после Validate, после дописывания9 к массе30000.1234567899 Save disabled/успех исчез. Save/Restore/Delete не нажимались. Однако screenshot показал поле массы под IME — XML text success не подтверждает видимость.
+
+Промежуточные реализации KeyboardDidShow со scrollResponderScrollNativeHandleToKeyboard, компенсация safe-area через native measure, window geometry и KeyboardAvoidingView не прошли строгую проверку границ поля; они удалены. Их успешные unit/JS проверки не объявлены device success. Typecheck обнаруживал неверный mock EmitterSubscription и measureInWindow на ScrollView вместо native ref; исправленные промежуточные варианты впоследствии удалены. Новый form test сначала разрешил iOS module вместо .tsx из-за Jest mapping, исправлен explicit require ProfileInput.tsx. Временный QA сначала нажимал подпись вместо input, потом крупными свайпами пропускал поля; helper исправлен, assertions сохранены. Во время одной проверки проводилось hot reload, поэтому её одного недостаточно; окончательный полный сценарий повторён после завершения всех production edits. Попытка остановки собственного intermediate helper проверила PID/command line, процесс уже завершился, Stop-Process сообщил absent; чужие процессы не трогались.
+
+Окончательное решение: Android ProfileInput с ref измеряет windowY при focus, форма передаёт callback в App, ScrollView учитывает текущий offset и своё положение и поднимает поле с отступом16; текст/defaultValue/native editing session не меняются. ProfileInput.ios.tsx/UIKit adapter не изменены. Нет global keyboard subscriptions/KAV/таймеров в окончательном коде.
+
+Выполнены на окончательном коде: typecheck, lint,23 tests/7 suites, Android/iOS JS bundles success (только NO_COLOR/FORCE_COLOR warning). Focus device QA: exact30000.123456789 при видимой IME, полные bounds103,668–979,794 на1080x2400, выше клавиатуры; decimal-keyboard-fixed.png просмотрен. После этого полный numeric scenario повторён: шесть exact values, IME, exact SI summary, Save enabled после Validate и disabled после mass edit — success/exit0. Evidence/helpers в ignored artifacts/design-device. Никаких snapshot writes; стенд оставлен работающим.
+
+Не выполнены: новые APK/Xcode native builds, iOS regression/CI, физические устройства, сторонние IME, ручные нажатия каждой клавиши, успешный save/restart/restore на устройстве в этой итерации,130% после последнего focus-scroll изменения, переходы между полями при уже открытой IME. Android input text commands не имитируют все особенности IME. Следующий ограниченный шаг: native Android/iOS regression текущего UI; авторизация остаётся отдельной задачей после этого, провайдер не выбран.
