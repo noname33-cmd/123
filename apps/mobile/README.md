@@ -63,3 +63,7 @@ Persistence XCTest дополнительно заменяет всю выдел
 ### Partial numeric selection and clipboard
 
 Расширенный persistence XCTest проверяет замену последних трёх цифр массы через Shift+Left, затем системные Copy/Paste внутри одного приложения через Command-C/Command-V. Перед Paste поле временно заменено на1; ожидаемое значение после Paste —30000.123456125 kg. Проверяются точная native строка, повторная validation и восстановление после restart; результаты прогона в docs/audit.md. Тест выполняйте на disposable Simulator: он записывает synthetic fixture в clipboard. Cross-app clipboard permissions и меню Paste этим сценарием не покрыты.
+
+Native сценарий подтверждён [CI run39030732736](https://github.com/noname33-cmd/123/actions/runs/39030732736), code commit7772a6c3e0919099839a1f091c0d9828ea50059f: 2 XCTest/0 failures/176.738s. Скриншот profile-pasted просмотрен: поле и SI summary после restart содержат30000.123456125 kg. Отдельный Docker-сбой общей CI задачи и результат её повтора зафиксированы в docs/audit.md.
+
+Итог всего [CI run39030732736](https://github.com/noname33-cmd/123/actions/runs/39030732736): checks/Android/iOS success после повтора checks на том же commit7772a6c. Первый Docker failure и успешный повтор подробно записаны в audit; проверки не отключались. System clipboard подтверждён только внутри приложения через клавиатурные команды, partial selection — последние3 цифры. Экранное меню/cross-app permission prompts/physical devices отдельно не проверялись.
