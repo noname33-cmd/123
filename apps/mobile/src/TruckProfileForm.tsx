@@ -1,5 +1,5 @@
 import React, {useRef, useState} from 'react';
-import {Button, StyleSheet, Text, TextInput, View, type TextInputProps} from 'react-native';
+import {Button, Platform, StyleSheet, Text, TextInput, View, type TextInputProps} from 'react-native';
 import {parseTruckProfile, feetToMeters, inchesToMeters, poundsToKilograms, feetAndInchesToMeters,
   type TruckProfile, type VehicleType} from '@truck/truck-profile';
 import {type TruckProfileStore} from './storage/TruckProfileStore';
@@ -145,5 +145,6 @@ export function TruckProfileForm({store}: {store?: TruckProfileStore}) {
 const styles = StyleSheet.create({
   form: {gap: 12, marginTop: 24}, heading: {fontSize: 22, fontWeight: '600'},
   choice: {marginVertical: 4}, field: {gap: 4},
-  input: {borderWidth: 1, borderColor: '#64748b', borderRadius: 8, padding: 12, color: '#102535'},
+  input: {borderWidth: 1, borderColor: '#64748b', borderRadius: 8, padding: 12,
+    ...Platform.select({android: {color: '#102535'}})},
 });
