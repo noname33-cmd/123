@@ -53,3 +53,7 @@ TruckProfileForm использует исходное defaultValue на сес�
 
 
 Проверено 2026-10-17: [CI run 39027860871](https://github.com/noname33-cmd/123/actions/runs/39027860871), code commit 066a00c7f8a272c7aa4b3742b02e7f70aaab845b — checks/Android/iOS success. UIKit input определяется как TextField; XCTest вводит каждую полную строку одним typeText без ожидания между символами и сверяет полное значение до Validate/Save. Save/restart/restore/delete/restart/empty с точным SI прошёл, 2 XCTest/0 failures/114.17s. Screenshot восстановленных native полей визуально проверен. Android CI с 720x1600/density280/4G прошёл два последовательных прогона; это не доказывает окончательное устранение системного ANR на всех runner.
+
+### Revalidating an edited snapshot
+
+Persistence XCTest дополнительно заменяет всю выделенную массу восстановленного профиля через Command-A и ввод целой строки, проверяет блокировку Save до Validate, сохраняет новую точную массу 30000.123456789 kg и восстанавливает её после restart. Результаты актуального native прогона — в docs/audit.md; системный clipboard paste и частичное выделение этим сценарием не проверяются. Компонентный тест отдельно проверяет, что invalid replacement не меняет прежний JSON snapshot.

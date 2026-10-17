@@ -75,3 +75,39 @@ it('does not claim successful writes or erase corrupted data when restore fails'
   expect(tree.root.findAllByType(Text).some(node => node.props.children === 'Validated snapshot saved on this device.')).toBe(false);
   await act(async () => {tree.unmount();});
 });
+
+it('keeps the saved snapshot unchanged after invalid edits and persists an exact revalidated replacement', async () => {
+  const original = JSON.stringify({storageVersion: 1, profile: validated});
+  let raw = original;
+  const port = {getItem: async () => raw,
+    setItem: jest.fn(async (_key: string, value: string) => {raw = value;}),
+    removeItem: jest.fn(async () => {})};
+  let tree!: ReactTestRenderer;
+  await act(async () => {tree = renderer.create(<TruckProfileForm store={new JsonTruckProfileStore(port)} />);});
+  const button = (title: string) => tree.root.findAllByType(Button).find(node => node.props.title === title)!;
+  const press = async (title: string) => {await act(async () => {button(title).props.onPress();});};
+  const editMass = async (text: string) => {await act(async () => {
+    tree.root.findAllByType(TextInput).find(node => node.props.accessibilityLabel === 'Current gross mass (kg)')!.props.onChangeText(text);
+  });};
+  await press('Restore saved profile');
+  await editMass('0');
+  expect(button('Save profile on this device').props.disabled).toBe(true);
+  await press('Save profile on this device');
+  await press('Validate profile');
+  expect(button('Save profile on this device').props.disabled).toBe(true);
+  await press('Save profile on this device');
+  expect(port.setItem).not.toHaveBeenCalled();
+  expect(raw).toBe(original);
+  await press('Restore saved profile');
+  await editMass('30000.123456789');
+  expect(button('Save profile on this device').props.disabled).toBe(true);
+  await press('Validate profile');
+  expect(button('Save profile on this device').props.disabled).toBe(false);
+  await press('Save profile on this device');
+  expect(port.setItem).toHaveBeenCalledTimes(1);
+  expect(JSON.parse(raw).profile.currentGrossMassKilograms).toBe('30000.123456789');
+  await editMass('1');
+  await press('Restore saved profile');
+  expect(tree.root.findAllByType(TextInput).find(node => node.props.accessibilityLabel === 'Current gross mass (kg)')!.props.defaultValue).toBe('30000.123456789');
+  await act(async () => {tree.unmount();});
+});

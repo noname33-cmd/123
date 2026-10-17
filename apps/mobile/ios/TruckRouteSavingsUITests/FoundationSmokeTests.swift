@@ -108,6 +108,38 @@ final class FoundationSmokeTests: XCTestCase {
     restored.name = "profile-restored"
     restored.lifetime = .keepAlways
     add(restored)
+
+    // Replace a selection in an already validated, restored native field.
+    // Command-A exercises UIKit selection; sending a complete replacement
+    // must not append to the old value or reset the native editing buffer.
+    let mass = app.textFields["Current gross mass (kg)"].firstMatch
+    reveal(mass, in: app)
+    XCTAssertEqual(mass.value as? String, "36287.3896")
+    mass.tap()
+    mass.typeKey("a", modifierFlags: .command)
+    mass.typeText("30000.123456789")
+    let edited = expectation(for: NSPredicate(format: "value == %@", "30000.123456789"), evaluatedWith: mass)
+    wait(for: [edited], timeout: 5)
+    let invalidated = expectation(for: NSPredicate(format: "enabled == false"),
+      evaluatedWith: app.buttons["Save profile on this device"])
+    wait(for: [invalidated], timeout: 5)
+    XCTAssertFalse(app.buttons["Save profile on this device"].isEnabled, "An edited snapshot must be revalidated")
+    XCTAssertFalse(app.staticTexts.matching(NSPredicate(format: "label == %@",
+      "Validated SI: height 4.1148 m; width 2.5908 m; length 18.288 m; mass 36287.3896 kg.")).firstMatch.exists)
+    tap("Validate profile", in: app)
+    expectMessage("Validated SI: height 4.1148 m; width 2.5908 m; length 18.288 m; mass 30000.123456789 kg.", in: app)
+    tap("Save profile on this device", in: app)
+    expectMessage("Validated snapshot saved on this device.", in: app)
+    app.terminate()
+    app.launch()
+    XCTAssertTrue(app.staticTexts["Truck Route & Savings"].waitForExistence(timeout: 60))
+    tap("Restore saved profile", in: app)
+    expectMessage("Saved profile restored in m/kg.", in: app)
+    expectMessage("Validated SI: height 4.1148 m; width 2.5908 m; length 18.288 m; mass 30000.123456789 kg.", in: app)
+    let replaced = XCTAttachment(screenshot: app.screenshot())
+    replaced.name = "profile-replaced"
+    replaced.lifetime = .keepAlways
+    add(replaced)
     tap("Delete saved profile", in: app)
     expectMessage("Saved profile deleted from this device. Current form is unchanged.", in: app)
     app.terminate()
